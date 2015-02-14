@@ -1,9 +1,9 @@
 ##############################################
-# MISR 08/09 4km data extraction and analysis
-# Aeronet data from http://aeronet.gsfc.nasa.gov/
-# AQS Sites Monthly
+# MISR 2008-2009 4km data extraction and analysis
 # AQS Daily http://www.epa.gov/airdata/ad_data_daily.html
-# ICV Sites
+# Aeronet data http://aeronet.gsfc.nasa.gov/
+# AQS Sites Monthly (Twins study)
+# ICV data (CHS study)
 # December 2014, February 2015
 # Meredith Franklin
 ##############################################
@@ -15,12 +15,11 @@ library(plyr) # for easy merging
 library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
 library(proj4) # for map projections
-library(sp)
 
-setwd("/Users/mf/Documents/MISR/Data")
 
 ###### MISR NetCDF ######
 # Create list of filenames in directory
+setwd("/Users/mf/Documents/MISR/Data")
 misr.files <- list.files("./",pattern="*_LM_4p4km*",full.names=FALSE)
 
 # Extract data
@@ -38,13 +37,19 @@ AODnonspher<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Nonsphere
 AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmall=AODsmall,AODmed=AODmed,AODlarge=AODlarge,AODnonspher=AODnonspher)
 misr.list[[i]]<-AOD.dat
 }
-AOD.dat.08.09<-do.call("rbind", misr.list)
+misr.08.09<-do.call("rbind", misr.list)
 
 # Convert Julian dates, create month day year variables for matching with ICV
-AOD.dat.08.09$date<- chron(AOD.dat.08.09$julian, origin=c(month=11, day=24, year= -4713))
-AOD.dat.08.09$year<-years(AOD.dat.08.09$date)
-AOD.dat.08.09$month<-as.numeric(months(AOD.dat.08.09$date))
-AOD.dat.08.09$day<-as.numeric(days(AOD.dat.08.09$date))
+misr.08.09$date<- chron(misr.08.09$julian, origin=c(month=11, day=24, year= -4713))
+misr.08.09$year<-years(misr.08.09$date)
+misr.08.09$month<-as.numeric(months(misr.08.09$date))
+misr.08.09$day<-as.numeric(days(misr.08.09$date))
+
+# Convert lat and lon into planar x and y (California projection)
+proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
+newcoords.misr<-project(as.matrix(cbind(misr.08.09$lon, misr.08.09$lat)), proj=proj.albers)
+misr.08.09$x<-newcoords.misr[,1]
+misr.08.09$y<-newcoords.misr[,2]
 
 write.csv(AOD.dat.08.09,"AOD.dat.08.09.csv")
 
@@ -81,12 +86,13 @@ for(i in 1:length(aqs.files)) {
 
 AQS.08.09 <- do.call("rbind", aqs.list) 
 
-# match MISR and AQS by proximity and date
-# convert lat and lon into planar x and y
+# Convert lat and lon into planar x and y (California projection)
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
-newcoords.misr<-project(as.matrix(cbind(AOD.08.09$lon, AOD.08.09$lat)), proj=proj.albers)
-hard.ss$x<-newcoords.hard[,1]
-hard.ss$y<-newcoords.hard[,2]
+newcoords.aqs<-project(as.matrix(cbind(AQS.08.09$lon, AQS.08.09$lat)), proj=proj.albers)
+AQS.08.09$x<-newcoords.aqs[,1]
+AQS.08.09$y<-newcoords.aqs[,2]
+
+# match MISR and AQS by proximity and date
 
 
 aqs.PM25<-aqs.PM25[unique(c(aqs.PM25$lon, aqs.PM25$lat)),]
