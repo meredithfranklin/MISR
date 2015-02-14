@@ -2,7 +2,7 @@
 # MISR 08/09 4km data extraction and analysis
 # Aeronet data from http://aeronet.gsfc.nasa.gov/
 # AQS Sites Monthly
-# AQS Daily http://www.epa.gov/ttn/airs/airsaqs/detaildata/downloadaqsdata.htm
+# AQS Daily http://www.epa.gov/airdata/ad_data_daily.html
 # ICV Sites
 # December 2014, February 2015
 # Meredith Franklin
@@ -14,6 +14,8 @@ library(chron) # for converting julian dates
 library(plyr) # for easy merging
 library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
+library(proj4) # for map projections
+library(sp)
 
 setwd("/Users/mf/Documents/MISR/Data")
 
@@ -55,24 +57,36 @@ write.csv(AOD.monthly,"AOD.dat.08.09.monthly.csv")
 
 # Daily AQS data
 setwd("/Users/mf/Documents/AQS/PM25")
-aqs.files <- list.files("./",pattern=".txt",full.names=FALSE)
+aqs.files <- list.files("./",pattern=".csv",full.names=FALSE)
 
 # Extract data
 aqs.list<-vector('list',length(aqs.files))
 for(i in 1:length(aqs.files)) { 
-  dat<-read.table(aqs.files[i], sep="|",header=FALSE,skip=2)
-  header<-read.table(aqs.files[i],sep="|",header=TRUE,row.names=NULL,
-                      check.names=FALSE,nrows=2,skip=1,comment.char="")
-  colnames(dat)<-names(header)
-  cbind(read.fwf(file = textConnection(as.character(dat$Year)), 
-                 widths = c(4, 2, 3), colClasses = "character", 
-                 col.names = c("Year2", "Month", "day")), 
-        df[-1])
-  aqs.PM25<-read.table("/Users/mf/Documents/Sunlight Cognition/Twins/Exposure Data/07a_PM25_hard_FINAL.txt",sep='\t',header=FALSE)
-colnames(aqs.PM25)<-c("lon","lat","JulianDate","PM25")
-dates<-read.csv("/Users/mf/Documents/Sunlight Cognition/Twins/Exposure Data/dates_SC.csv")
-aqs.PM25<-merge(aqs.PM25,dates, by=c("JulianDate"),all=FALSE)
-aqs.PM25.08.09<-aqs.PM25[aqs.PM25$Year>=2008&aqs.PM25$Year<=2009,]
+  dat<-read.csv(aqs.files[i],stringsAsFactors=FALSE)
+# separate m/d/y from Date
+  date<-strsplit(dat$Date,"/")
+  dat$month<-as.numeric(sapply(date, "[[", 1) )
+  dat$day<-as.numeric(sapply(date,"[[",2))
+  dat$year<-as.numeric(sapply(date,"[[",3))+2000
+  dat<-dat[,c(-10:-13)]
+# reading national .txt files (no geographic reference)  
+  #header<-read.table(aqs.files[i],sep="|",header=TRUE,row.names=NULL,
+  #                   check.names=FALSE,nrows=2,skip=1,comment.char="")
+  #colnames(dat)<-names(header)
+  #dat<-cbind(read.fwf(file = textConnection(as.character(dat$Year)), 
+  #               widths = c(4, 2, 3), colClasses = "character", 
+  #               col.names = c("year2", "month", "day")),dat)
+  aqs.list[[i]]<-dat
+}
+
+AQS.08.09 <- do.call("rbind", aqs.list) 
+
+# match MISR and AQS by proximity and date
+# convert lat and lon into planar x and y
+proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
+newcoords.misr<-project(as.matrix(cbind(AOD.08.09$lon, AOD.08.09$lat)), proj=proj.albers)
+hard.ss$x<-newcoords.hard[,1]
+hard.ss$y<-newcoords.hard[,2]
 
 
 aqs.PM25<-aqs.PM25[unique(c(aqs.PM25$lon, aqs.PM25$lat)),]
