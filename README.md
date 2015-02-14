@@ -1,4 +1,2 @@
 # spatial
-Code for processing satellite data
-OMI
-MISR
+Code for processing, mapping and integrating MISR satellite data with AQS, Aeronet and ICV data.
