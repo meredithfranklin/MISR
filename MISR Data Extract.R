@@ -141,6 +141,9 @@ MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
 }
 
 MISR.AQS <- do.call("rbind", MISR.AQS.match.all)
+write.csv(MISR.AQS,"/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
+
+
 # MISR AOD and PM2.5
 plot(MISR.AQS$AOD,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
 abline(lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS), col="red")
