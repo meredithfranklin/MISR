@@ -5,19 +5,33 @@
 ##############################################
 library(RgoogleMaps) 
 library(RColorBrewer) 
+AQS.08.09<-read.
+proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
+# Project the map
+CA <- data.frame(map("state","california", plot=FALSE)[c("x","y")])
+#project the map coordinates
+newcoordsCA<-project(CA, proj=proj.albers)
 
-setwd("/Users/mf/Documents/MISR/Data")
-AOD.dat.08.09<-read.csv("AOD.dat.08.09.csv")
-AOD.monthly<-read.csv("AOD.dat.08.09.csv")
+# MISR data
+misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
+misr.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
+# AQS data
+AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
+
+
+# pick a particular date
+misr.05.07.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==5 & misr.08.09$day==7,]
+aqs.05.07.08<-AQS.08.09.ss[AQS.08.09.ss$year==2008&AQS.08.09.ss$month==5&AQS.08.09.ss$day==7,]
 #Create a function to generate a continuous color palette
 rbPal <- colorRampPalette(tim.colors(32))
-AOD.breaks <-quantile(AOD.dat.sep.09$AOD.month, seq(0,1,1/10))
+AOD.breaks <-quantile(misr.05.07.08$AOD, seq(0,1,1/10))
 col.ramp <-rbPal(length(AOD.breaks))  
-AOD.dat.sep.09$Col <- rbPal(10)[as.numeric(cut(AOD.dat.sep.09$AOD.month,
-                                               breaks = quantile(AOD.dat.sep.09$AOD.month, seq(0,1,1/10))))]
-zoom <- min(MaxZoom(range(AOD.dat.sep.09$lat), range(AOD.dat.sep.09$lon)))
-map <- GetMap(center=c(34.42,  -117.8), maptype='satellite', zoom=7)
-PlotOnStaticMap(map,AOD.dat.sep.09$lat,AOD.dat.sep.09$lon, cex=0.5,pch=15,col=AOD.dat.sep.09$Col)
+misr.05.07.08$Col <- rbPal(10)[as.numeric(cut(misr.05.07.08$AOD,
+                                               breaks = quantile(misr.05.07.08$AOD, seq(0,1,1/10))))]
+map <- GetMap(center=c(34.42,  -117.8), maptype='satellite', zoom=8)
+PlotOnStaticMap(map,aqs.05.07.08$SITE_LATITUDE,aqs.05.07.08$SITE_LONGITUDE, cex=1.5,pch=19,col="black")
+
+
 PlotOnStaticMap(map,lat=34.380, lon= -117.680, cex=2,pch="+", col='purple',add=TRUE)
 #PlotOnStaticMap(map,AOD.dat.jul.09$lat,AOD.dat.jul.09$lon, cex=2.5,pch=19,col='black',add=TRUE)
 #PlotOnStaticMap(map,AOD.dat.aug.09$lat,AOD.dat.aug.09$lon, cex=2.5,pch=19,col='green',add=TRUE)

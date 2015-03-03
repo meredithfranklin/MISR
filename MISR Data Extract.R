@@ -2,7 +2,6 @@
 # MISR 2008-2009 4km data extraction and analysis
 # AQS Daily http://www.epa.gov/airdata/ad_data_daily.html
 # Aeronet data http://aeronet.gsfc.nasa.gov/
-# AQS Sites Monthly (Twins study)
 # ICV data (CHS study)
 # December 2014, February 2015
 # Meredith Franklin
@@ -11,7 +10,7 @@
 library(ncdf) # for reading netcdf file formats
 library(date) # for converting julian dates
 library(chron) # for converting julian dates
-library(plyr) # for easy merging
+library(dplyr) # for easy merging
 library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
 library(proj4) # for map projections
@@ -51,16 +50,16 @@ newcoords.misr<-project(as.matrix(cbind(misr.08.09$lon, misr.08.09$lat)), proj=p
 misr.08.09$x<-newcoords.misr[,1]
 misr.08.09$y<-newcoords.misr[,2]
 
-write.csv(AOD.dat.08.09,"AOD.dat.08.09.csv")
+write.csv(misr.08.09,"misr.08.09.csv")
 
 # Take monthly averages for matching with ICV data
-AOD.monthly <- ddply(AOD.dat.08.09, .(lat,lon,month), summarise, AOD.month=mean(AOD),
+misr.08.09.monthly <- ddply(misr.08.09, .(lat,lon,month), summarise, AOD.month=mean(AOD),
                         AODsmall.month=mean(AODsmall), AODmed.month=mean(AODmed), 
                         AODlarge.month=mean(AODlarge),AODnonsph.month=mean(AODnonspher))
-write.csv(AOD.monthly,"AOD.dat.08.09.monthly.csv")
+write.csv(misr.08.09.monthly,"misr.08.09.monthly.csv")
 
 
-# Daily AQS data
+##### Daily AQS data ######
 setwd("/Users/mf/Documents/AQS/PM25")
 aqs.files <- list.files("./",pattern=".csv",full.names=FALSE)
 
@@ -88,12 +87,91 @@ AQS.08.09 <- do.call("rbind", aqs.list)
 
 # Convert lat and lon into planar x and y (California projection)
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
-newcoords.aqs<-project(as.matrix(cbind(AQS.08.09$lon, AQS.08.09$lat)), proj=proj.albers)
+newcoords.aqs<-project(as.matrix(cbind(AQS.08.09$SITE_LONGITUDE, AQS.08.09$SITE_LATITUDE)), proj=proj.albers)
 AQS.08.09$x<-newcoords.aqs[,1]
 AQS.08.09$y<-newcoords.aqs[,2]
 
-# match MISR and AQS by proximity and date
+# Subset AQS data around LA area
+AQS.08.09.ss<-AQS.08.09[AQS.08.09$SITE_LONGITUDE>=-120 & AQS.08.09$SITE_LONGITUDE<= -117,]
+AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LATITUDE>=33.2 & AQS.08.09.ss$SITE_LATITUDE<=35,]
+AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LONGITUDE != -119.4869,] #Remove Catalina
 
+write.csv(AQS.08.09.ss,"AQS.08.09.ss.csv")
+write.csv(AQS.08.09,"AQS.08.09.csv")
+
+##### Daily NCDC data #####
+# Station Information
+#file <- "ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.csv"
+#download.file(file, "isd-history.csv")
+st <- read.csv("/Users/mf/Documents/NCDC/isd-history.csv") 
+st.ca<-st[st$CTRY=="US" & st$STATE=="CA",]
+st.ca$BEGIN <- as.numeric(substr(st.ca$BEGIN, 1, 4))
+st.ca$END <- as.numeric(substr(st.ca$END, 1, 4))
+
+st.so.ca<-st.ca[st.ca$LAT>=33.2 & st.ca$LAT<=35,]
+st.so.ca<-st.so.ca[st.so.ca$LON<= -120 & st.so.ca$LON>= -117,]
+st.so.ca<-st.so.ca[complete.cases(st.so.ca),]
+
+# match MISR and AQS by date and distance (<5km)
+# Take unique dates from MISR file
+misr.days<-misr.08.09 %>% distinct(round(julian,digits=0))
+MISR.AQS.match.all<-vector('list',length(AQS.08.09.ss$Date))
+for (i in 1:length(misr.days$date)){
+  aqs.daily<-AQS.08.09.ss[AQS.08.09.ss$day %in% misr.days[i,]$day & 
+                            AQS.08.09.ss$month %in% misr.days[i,]$month &
+                              AQS.08.09.ss$year %in% misr.days[i,]$year,]
+  misr.daily<-misr.08.09[misr.08.09$day %in% misr.days[i,]$day & 
+                           misr.08.09$month %in% misr.days[i,]$month &
+                           misr.08.09$year %in% misr.days[i,]$year,]
+  #distance matrix
+  dist<-rdist(cbind(misr.daily$x,misr.daily$y),cbind(aqs.daily$x,aqs.daily$y))
+  # take pixel which is smallest distance from AQS site
+  # identify row of distance matrix (misr pixel id), with smallest column is aqs site
+  
+  MISR.AQS.match.list<-vector('list',length(dist[1,]))
+  for (j in 1:length(dist[1,])){ 
+    if (min(dist[,j])<=5){
+      MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel
+    } 
+    #print(min(dist[,j]))
+    #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
+}
+MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
+
+}
+
+MISR.AQS <- do.call("rbind", MISR.AQS.match.all)
+# MISR AOD and PM2.5
+plot(MISR.AQS$AOD,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
+abline(lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS), col="red")
+
+cor(MISR.AQS$AOD,MISR.AQS$Daily.Mean.PM2.5.Concentration)
+lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS)
+
+# MISR AOD Small and PM2.5
+plot(MISR.AQS$AODsmall,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
+abline(lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS), col="red")
+cor(MISR.AQS$AODsmall,MISR.AQS$Daily.Mean.PM2.5.Concentration)
+lm.MISR.AOD.small<-lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS)
+
+# MISR AOD Medium and PM2.5
+plot(MISR.AQS$AODmed,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
+abline(lm(Daily.Mean.PM2.5.Concentration~AODmed, data=MISR.AQS), col="red")
+cor(MISR.AQS$AODmed,MISR.AQS$Daily.Mean.PM2.5.Concentration)
+lm.MISR.AOD.med<-lm(Daily.Mean.PM2.5.Concentration~AODmed, data=MISR.AQS)
+
+# MISR AOD Large and PM2.5
+plot(MISR.AQS$AODlarge,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
+abline(lm(Daily.Mean.PM2.5.Concentration~AODlarge, data=MISR.AQS), col="red")
+cor(MISR.AQS$AODlarge,MISR.AQS$Daily.Mean.PM2.5.Concentration)
+lm.MISR.AOD.large<-lm(Daily.Mean.PM2.5.Concentration~AODlarge, data=MISR.AQS)
+
+
+mindist.list<-vector('list',length(dist[1,]))
+for (i in 1:length(dist[1,])){
+  mindist.list[[i]]<-min(dist[,i])
+}
+mindist.all <- do.call("rbind", mindist.list) 
 
 aqs.PM25<-aqs.PM25[unique(c(aqs.PM25$lon, aqs.PM25$lat)),]
 # Find unique subject locations and times for prediction
