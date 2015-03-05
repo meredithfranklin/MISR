@@ -5,23 +5,23 @@
 ##############################################
 library(RgoogleMaps) 
 library(RColorBrewer) 
-AQS.08.09<-read.
+
+# Read processed data
+AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
+MISR.08.09<-read.csv(misr.08.09,"/Users/mf/Documents/MISR/Data/misr.08.09.csv")
+MISR.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
+
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 # Project the map
 CA <- data.frame(map("state","california", plot=FALSE)[c("x","y")])
 #project the map coordinates
 newcoordsCA<-project(CA, proj=proj.albers)
 
-# MISR data
-misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
-misr.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
-# AQS data
-AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
 
-
-# pick a particular date
+# pick a particular date for mapping
 misr.05.07.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==5 & misr.08.09$day==7,]
 aqs.05.07.08<-AQS.08.09.ss[AQS.08.09.ss$year==2008&AQS.08.09.ss$month==5&AQS.08.09.ss$day==7,]
+
 #Create a function to generate a continuous color palette
 rbPal <- colorRampPalette(tim.colors(32))
 AOD.breaks <-quantile(misr.05.07.08$AOD, seq(0,1,1/10))

@@ -1,5 +1,5 @@
 ##############################################
-# MISR 2008-2009 4km data extraction and analysis
+# MISR 2008-2009 4km data extraction 
 # AQS Daily http://www.epa.gov/airdata/ad_data_daily.html
 # Aeronet data http://aeronet.gsfc.nasa.gov/
 # ICV data (CHS study)
@@ -23,22 +23,22 @@ misr.files <- list.files("./",pattern="*_LM_4p4km*",full.names=FALSE)
 
 # Extract data
 misr.list<-vector('list',length(misr.files))
-for(i in 1:length(misr.files)) { 
-dat<-open.ncdf(misr.files[i])
-lat<-get.var.ncdf(dat, "Latitude")
-lon<-get.var.ncdf(dat, "Longitude")
-julian<-get.var.ncdf(dat, "Julian")
-AOD<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepth")
-AODsmall<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Small")
-AODmed<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Medium")
-AODlarge<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Large")
-AODnonspher<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Nonsphere")
-AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmall=AODsmall,AODmed=AODmed,AODlarge=AODlarge,AODnonspher=AODnonspher)
-misr.list[[i]]<-AOD.dat
+  for(i in 1:length(misr.files)) { 
+    dat<-open.ncdf(misr.files[i])
+    lat<-get.var.ncdf(dat, "Latitude")
+    lon<-get.var.ncdf(dat, "Longitude")
+    julian<-get.var.ncdf(dat, "Julian")
+    AOD<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepth")
+    AODsmall<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Small")
+    AODmed<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Medium")
+    AODlarge<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Large")
+    AODnonspher<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Nonsphere")
+    AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmall=AODsmall,AODmed=AODmed,AODlarge=AODlarge,AODnonspher=AODnonspher)
+    misr.list[[i]]<-AOD.dat
 }
 misr.08.09<-do.call("rbind", misr.list)
 
-# Convert Julian dates, create month day year variables for matching with ICV
+# Convert Julian dates, create month day year variables for matching with surface measures
 misr.08.09$date<- chron(misr.08.09$julian, origin=c(month=11, day=24, year= -4713))
 misr.08.09$year<-years(misr.08.09$date)
 misr.08.09$month<-as.numeric(months(misr.08.09$date))
@@ -52,7 +52,7 @@ misr.08.09$y<-newcoords.misr[,2]
 
 write.csv(misr.08.09,"misr.08.09.csv")
 
-# Take monthly averages for matching with ICV data
+# Take monthly averages for matching with ICV surface data
 misr.08.09.monthly <- ddply(misr.08.09, .(lat,lon,month), summarise, AOD.month=mean(AOD),
                         AODsmall.month=mean(AODsmall), AODmed.month=mean(AODmed), 
                         AODlarge.month=mean(AODlarge),AODnonsph.month=mean(AODnonspher))
@@ -112,7 +112,59 @@ st.so.ca<-st.ca[st.ca$LAT>=33.2 & st.ca$LAT<=35,]
 st.so.ca<-st.so.ca[st.so.ca$LON<= -120 & st.so.ca$LON>= -117,]
 st.so.ca<-st.so.ca[complete.cases(st.so.ca),]
 
-# match MISR and AQS by date and distance (<5km)
+# Pick WBAN 722880 (Burbank)
+la.weather<-st.so.ca[st.so.ca$USAF %in% 722880,]
+files.gz <- list.files("./Burbank Met",full.names=TRUE,pattern=".gz")
+for (y in 2008:2009){
+  y.la.list<-la.weather[la.weather$BEGIN<=y & la.weather$END>=y,]
+  for (s in 1:dim(y.la.list)[1])
+    filename<-paste(sprintf("%06d",y.la.list[s,1]),"-",sprintf("%05d",y.la.list[s,2]),"-",y,".gz",sep="")
+  download.file(paste("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/",y,"/",filename,sep=""), paste("/Users/mf/Documents/NCDC/Burbank Met/",filename,sep=""), method='wget') 
+  for(i in 1:length(files)){
+    gunzip(files.gz[[i]])
+  }
+}
+
+column.widths <- c(4, 6, 5, 4, 2, 2, 2, 2, 1, 6, 7, 5, 5, 5, 4, 3, 1, 1, 4, 1, 5, 1, 1, 1, 6, 1, 1, 1, 5, 1, 5, 1, 5, 1)
+stations <- as.data.frame(matrix(NA, length(files),6))
+names(stations) <- c("USAFID", "WBAN", "YR", "LAT","LONG", "ELEV")
+
+files <- list.files("./Burbank Met",full.names=TRUE)
+for (i in 1:length(files)) {
+  data <- read.fwf(files[i], column.widths)
+  data <- data[, c(2:8, 10:11, 13, 16, 19, 29,31, 33)]
+  names(data) <- c("USAFID", "WBAN", "YR", "M","D", "HR", "MIN", "LAT", "LONG", "ELEV","WIND.DIR", "WIND.SPD", "TEMP", "DEW.POINT","ATM.PRES")
+  data$LAT <- data$LAT/1000
+  data$LONG <- data$LONG/1000
+  data$WIND.SPD <- data$WIND.SPD/10
+  data$TEMP <- data$TEMP/10
+  data$DEW.POINT <- data$DEW.POINT/10
+  data$ATM.PRES <- data$ATM.PRES/10
+  write.csv(data, file = paste(files[i],".csv", sep = ""), row.names = FALSE)
+  stations[i, 1:3] <- data[1, 1:3]
+  stations[i, 4:6] <- data[1, 8:10]
+}
+
+files.csv <- list.files("./Burbank Met/Processed",full.names=TRUE)
+data.daily.all<-NULL
+for (i in 1:length(files.csv)) {
+  data<-read.csv(files.csv[i])
+  data$TEMP<-ifelse(data$TEMP==999.9,NA,data$TEMP)
+  data$DEW.POINT<-ifelse(data$DEW.POINT==999.9,NA,data$DEW.POINT)
+  data$WIND.DIR<-ifelse(data$WIND.DIR==999.9,NA,data$WIND.DIR)
+  data$WIND.SPD<-ifelse(data$WIND.SPD==999.9,NA,data$WIND.SPD)
+  data$ATM.PRES<-ifelse(data$ATM.PRES>2000,NA,data$ATM.PRES)
+  data.daily<-ddply(data,.(YR,M,D),summarize,temp=mean(TEMP,na.rm=TRUE),
+                    dp.temp=mean(DEW.POINT,na.rm=TRUE),wd.sp=mean(WIND.SPD,na.rm=TRUE),
+                    wd.dir=mean(WIND.DIR,na.rm=TRUE),atm.pres=mean(ATM.PRES,na.rm=TRUE))
+  data.daily.all <- rbind(data.daily.all, data.daily)
+}
+data.daily.all$date<-as.Date(ISOdate(data.daily.all$YR,data.daily.all$M, data.daily.all$D))
+write.csv(data.daily.all,"/Users/mf/Documents/NCDC/LAMet.csv") 
+
+
+
+# match MISR and AQS by date and distance
 # Take unique dates from MISR file
 misr.days<-misr.08.09 %>% distinct(round(julian,digits=0))
 MISR.AQS.match.all<-vector('list',length(AQS.08.09.ss$Date))
