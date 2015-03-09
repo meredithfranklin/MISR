@@ -195,51 +195,6 @@ MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
 MISR.AQS <- do.call("rbind", MISR.AQS.match.all)
 write.csv(MISR.AQS,"/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
 
-
-# MISR AOD and PM2.5
-plot(MISR.AQS$AOD,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
-abline(lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS), col="red")
-
-cor(MISR.AQS$AOD,MISR.AQS$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS)
-
-# MISR AOD Small and PM2.5
-plot(MISR.AQS$AODsmall,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
-abline(lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS), col="red")
-cor(MISR.AQS$AODsmall,MISR.AQS$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD.small<-lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS)
-
-# MISR AOD Medium and PM2.5
-plot(MISR.AQS$AODmed,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
-abline(lm(Daily.Mean.PM2.5.Concentration~AODmed, data=MISR.AQS), col="red")
-cor(MISR.AQS$AODmed,MISR.AQS$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD.med<-lm(Daily.Mean.PM2.5.Concentration~AODmed, data=MISR.AQS)
-
-# MISR AOD Large and PM2.5
-plot(MISR.AQS$AODlarge,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
-abline(lm(Daily.Mean.PM2.5.Concentration~AODlarge, data=MISR.AQS), col="red")
-cor(MISR.AQS$AODlarge,MISR.AQS$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD.large<-lm(Daily.Mean.PM2.5.Concentration~AODlarge, data=MISR.AQS)
-
-
-mindist.list<-vector('list',length(dist[1,]))
-for (i in 1:length(dist[1,])){
-  mindist.list[[i]]<-min(dist[,i])
-}
-mindist.all <- do.call("rbind", mindist.list) 
-
-aqs.PM25<-aqs.PM25[unique(c(aqs.PM25$lon, aqs.PM25$lat)),]
-# Find unique subject locations and times for prediction
-aqs.PM25.nodups<-aqs.PM25[!duplicated(aqs.PM25[c(1:2)]),]
-
-aqs.PM25.09.09<-aqs.PM25[aqs.PM25$Year==2009&aqs.PM25$Month==9,]
-aqs.PM25.09.09<-aqs.PM25.09.09[aqs.PM25.09.09$lon>=-120 & aqs.PM25.09.09$lon<= -117,]
-aqs.PM25.09.09<-aqs.PM25.09.09[aqs.PM25.09.09$lat>=33.2 & aqs.PM25.09.09$lat<=35,]
-aqs.PM25.09.09<-aqs.PM25.09.09[aqs.PM25.09.09$lon != -119.4869,] #Remove Catalina
-
-
-
-
 # MISR retrievals near aeronet Table mountain site
 MISR.Aeronet.08.09<-AOD.dat.08.09[AOD.dat.08.09$lat>34.35&AOD.dat.08.09$lat<34.45,]
 MISR.Aeronet.08.09<-MISR.Aeronet.08.09[MISR.Aeronet.08.09$lon>= -117.75&MISR.Aeronet.08.09$lon<= -117.6,]
