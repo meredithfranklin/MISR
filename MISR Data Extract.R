@@ -10,7 +10,7 @@
 library(ncdf) # for reading netcdf file formats
 library(date) # for converting julian dates
 library(chron) # for converting julian dates
-library(dplyr) # for easy merging
+library(plyr) # for easy merging
 library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
 library(proj4) # for map projections
@@ -21,7 +21,7 @@ library(proj4) # for map projections
 setwd("/Users/mf/Documents/MISR/Data")
 misr.files <- list.files("./",pattern="*_LM_4p4km*",full.names=FALSE)
 
-# Extract data
+# Extract data: use RegBestEstimate for AOD, use RegLowestResid for fractions and SS albedo
 misr.list<-vector('list',length(misr.files))
   for(i in 1:length(misr.files)) { 
     dat<-open.ncdf(misr.files[i])
@@ -29,20 +29,26 @@ misr.list<-vector('list',length(misr.files))
     lon<-get.var.ncdf(dat, "Longitude")
     julian<-get.var.ncdf(dat, "Julian")
     AOD<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepth")
-    AODsmall<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Small")
-    AODmed<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Medium")
-    AODlarge<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Large")
-    AODnonspher<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepthFraction_Nonsphere")
-    AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmall=AODsmall,AODmed=AODmed,AODlarge=AODlarge,AODnonspher=AODnonspher)
+    AODsmallfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Small")
+    AODmedfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Medium")
+    AODlargefrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Large")
+    AODnonspher<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Nonsphere")
+    SSAlbedo<-get.var.ncdf(dat,"RegLowestResidSpectralSSA")
+    AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmallfrac=AODsmallfrac,AODmedfrac=AODmedfrac,AODlargefrac=AODlargefrac,AODnonspher=AODnonspher,SSAlbedo=SSAlbedo)
     misr.list[[i]]<-AOD.dat
 }
 misr.08.09<-do.call("rbind", misr.list)
 
 # Convert Julian dates, create month day year variables for matching with surface measures
 misr.08.09$date<- chron(misr.08.09$julian, origin=c(month=11, day=24, year= -4713))
+
 misr.08.09$year<-years(misr.08.09$date)
 misr.08.09$month<-as.numeric(months(misr.08.09$date))
 misr.08.09$day<-as.numeric(days(misr.08.09$date))
+# multiply fraction by AOD to get AODsmall, AODmed, AODlarge
+misr.08.09$AODsmall<-misr.08.09$AODsmallfrac*misr.08.09$AOD
+misr.08.09$AODmed<-misr.08.09$AODmedfrac*misr.08.09$AOD
+misr.08.09$AODlarge<-misr.08.09$AODlargefrac*misr.08.09$AOD
 
 # Convert lat and lon into planar x and y (California projection)
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
@@ -96,8 +102,8 @@ AQS.08.09.ss<-AQS.08.09[AQS.08.09$SITE_LONGITUDE>=-120 & AQS.08.09$SITE_LONGITUD
 AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LATITUDE>=33.2 & AQS.08.09.ss$SITE_LATITUDE<=35,]
 AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LONGITUDE != -119.4869,] #Remove Catalina
 
-write.csv(AQS.08.09.ss,"AQS.08.09.ss.csv")
-write.csv(AQS.08.09,"AQS.08.09.csv")
+write.csv(AQS.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
+write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv")
 
 ##### Daily NCDC data #####
 # Station Information
@@ -109,8 +115,11 @@ st.ca$BEGIN <- as.numeric(substr(st.ca$BEGIN, 1, 4))
 st.ca$END <- as.numeric(substr(st.ca$END, 1, 4))
 
 st.so.ca<-st.ca[st.ca$LAT>=33.2 & st.ca$LAT<=35,]
-st.so.ca<-st.so.ca[st.so.ca$LON<= -120 & st.so.ca$LON>= -117,]
+st.so.ca<-st.so.ca[st.so.ca$LON>= -120 & st.so.ca$LON<= -117,]
+# Remove Catalina and buoys
+st.so.ca<-st.so.ca[-(grep(c("BUOY|CATALINA|ISLAND"),st.so.ca$STATION.NAME)),]
 st.so.ca<-st.so.ca[complete.cases(st.so.ca),]
+write.csv(st.so.ca,"/Users/mf/Documents/NCDC/SoCalNCDCsites.csv")
 
 # Pick WBAN 722880 (Burbank)
 la.weather<-st.so.ca[st.so.ca$USAF %in% 722880,]
@@ -195,7 +204,54 @@ MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
 MISR.AQS <- do.call("rbind", MISR.AQS.match.all)
 write.csv(MISR.AQS,"/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
 
-# MISR retrievals near aeronet Table mountain site
+
+# ICV data
+# ICV<-read.sas7bdat("/Users/mf/Documents/AQS/STN/seasonal4wkdata_no2wk_aeavg_all.sas7bdat")
+ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV Comparisons Working Group/icv2_seasonal_20mar15.sas7bdat")
+
+# Create variables and export to csv
+ICV$date.start<- chron(ICV$startdate, origin=c(month=1, day=1, year= 1960))
+ICV$date.end<- chron(ICV$enddate, origin=c(month=1, day=1, year= 1960))
+ICV$duration<-ICV$date.end-ICV$date.start
+
+counts.ICV <- ddply(ICV, .(ICV$date.start), nrow)
+glendora<-ICVnew.ss[ICVnew.ss$town=="GL",]
+
+# Convert lat and lon into planar x and y (California projection)
+proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
+newcoords.icv<-project(as.matrix(cbind(ICV$lat, ICV$lon)), proj=proj.albers)
+ICV$x<-newcoords.icv[,1]
+ICV$y<-newcoords.icv[,2]
+
+# Match MISR with ICV within month first take average of MISR between dates for each ICV
+misr.days<-misr.08.09 %>% distinct(round(julian,digits=0))
+MISR.ICV.match.all<-vector('list',length(ICV$Date))
+for (i in 1:length(misr.days$date)){
+  aqs.daily<-AQS.08.09.ss[AQS.08.09.ss$day %in% misr.days[i,]$day & 
+                            AQS.08.09.ss$month %in% misr.days[i,]$month &
+                            AQS.08.09.ss$year %in% misr.days[i,]$year,]
+  misr.daily<-misr.08.09[misr.08.09$day %in% misr.days[i,]$day & 
+                           misr.08.09$month %in% misr.days[i,]$month &
+                           misr.08.09$year %in% misr.days[i,]$year,]
+  #distance matrix
+  dist<-rdist(cbind(misr.daily$x,misr.daily$y),cbind(aqs.daily$x,aqs.daily$y))
+  # take pixel which is smallest distance from AQS site
+  # identify row of distance matrix (misr pixel id), with smallest column is aqs site
+  
+  MISR.AQS.match.list<-vector('list',length(dist[1,]))
+  for (j in 1:length(dist[1,])){ 
+    if (min(dist[,j])<=5){
+      MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel
+    } 
+    #print(min(dist[,j]))
+    #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
+  }
+  MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
+  
+}
+
+
+# AERONET MISR retrievals near aeronet Table mountain site
 MISR.Aeronet.08.09<-AOD.dat.08.09[AOD.dat.08.09$lat>34.35&AOD.dat.08.09$lat<34.45,]
 MISR.Aeronet.08.09<-MISR.Aeronet.08.09[MISR.Aeronet.08.09$lon>= -117.75&MISR.Aeronet.08.09$lon<= -117.6,]
 MISR.Aeronet.08.09$year<-ifelse(MISR.Aeronet.08.09$year2==8690,2008,
@@ -280,21 +336,5 @@ xyplot(AOD ~ AOT870.daily | lat, data = MISR.Aeronet.08.09.merged, main="MISR AO
 cor(MISR.Aeronet.08.09.merged[,c(4:8,17:21)])
 
 
-# ICV data
-#ICV<-read.sas7bdat("/Users/mf/Documents/AQS/STN/seasonal4wkdata_no2wk_aeavg_all.sas7bdat")
-ICVnew<-read.sas7bdat("/Volumes/Projects/CHSICV/MergeDatasets/mergeddata.sas7bdat")
-
-# Keep relevant variables and export to csv
-ICV.ss<-ICV[,c(1,5:9,302,317:318,358:361,365:373)]
-ICVnew.ss<-ICVnew[,c(2:4,7,10:11,31:32,48:50,61:63,100,135,1262,1427,1435:1436,1438:1439,1451)]
-ICVnew.ss$date.start<- chron(ICVnew.ss$startdate, origin=c(month=1, day=1, year= 1960))
-ICVnew.ss$date.end<- chron(ICVnew.ss$enddate, origin=c(month=1, day=1, year= 1960))
-ICVnew.ss$duration<-ICVnew.ss$date.end-ICVnew.ss$date.start
-ICVnew.ss$startmonth<-month.day.year(unclass(ICVnew.ss$date.start))$month
-ICVwarm<-ICVnew.ss[ICVnew.ss$season=="warm",]
-ICVwarm.fine<-ICVwarm[!is.na(ICVwarm$Fine),]
-ICVcool<-ICVnew.ss[ICVnew.ss$season=="cool",]
-counts.ICV <- ddply(ICVnew.ss, .(ICVnew.ss$startmonth), nrow)
-glendora<-ICVnew.ss[ICVnew.ss$town=="GL",]
 
 

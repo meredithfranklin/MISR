@@ -6,7 +6,7 @@
 
 # Matched MISR-AQS data
 MISR.AQS<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
-
+MISR.AQS$AODsmall2<-MISR.AQS$AODsmall*MISR.AQS$AOD
 # Visualizations and regressions
 
 # MISR AOD and AQS PM2.5
@@ -15,9 +15,10 @@ abline(lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS), col="red")
 
 cor(MISR.AQS$AOD,MISR.AQS$Daily.Mean.PM2.5.Concentration)
 lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS)
+gam.MISR.AOD<-gam(Daily.Mean.PM2.5.Concentration~s(AOD), data=MISR.AQS)
 
 # MISR AOD Small and AQS PM2.5
-plot(MISR.AQS$AODsmall,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
+plot(MISR.AQS$AODsmall2,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD small',ylab='AQS PM2.5')
 abline(lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS), col="red")
 cor(MISR.AQS$AODsmall,MISR.AQS$Daily.Mean.PM2.5.Concentration)
 lm.MISR.AOD.small<-lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS)
