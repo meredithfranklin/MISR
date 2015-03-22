@@ -14,7 +14,7 @@ library(plyr) # for easy merging
 library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
 library(proj4) # for map projections
-
+library(R.utils) # decompressing NCDC data
 
 ###### MISR NetCDF ######
 # Create list of filenames in directory
@@ -109,8 +109,8 @@ write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv")
 # Station Information
 #file <- "ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.csv"
 #download.file(file, "isd-history.csv")
-st <- read.csv("/Users/mf/Documents/NCDC/isd-history.csv") 
-st.ca<-st[st$CTRY=="US" & st$STATE=="CA",]
+stations <- read.csv("/Users/mf/Documents/NCDC/isd-history.csv") 
+st.ca<-stations[stations$CTRY=="US" & stations$STATE=="CA",]
 st.ca$BEGIN <- as.numeric(substr(st.ca$BEGIN, 1, 4))
 st.ca$END <- as.numeric(substr(st.ca$END, 1, 4))
 
@@ -128,9 +128,9 @@ for (y in 2008:2009){
   y.la.list<-la.weather[la.weather$BEGIN<=y & la.weather$END>=y,]
   for (s in 1:dim(y.la.list)[1])
     filename<-paste(sprintf("%06d",y.la.list[s,1]),"-",sprintf("%05d",y.la.list[s,2]),"-",y,".gz",sep="")
-  download.file(paste("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/",y,"/",filename,sep=""), paste("/Users/mf/Documents/NCDC/Burbank Met/",filename,sep=""), method='wget') 
-  for(i in 1:length(files)){
-    gunzip(files.gz[[i]])
+    download.file(paste("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/", y,"/",filename,sep=""), paste("/Users/mf/Documents/NCDC/Burbank Met/",filename,sep=""), method='wget') 
+      for(i in 1:length(files.gz)){
+       gunzip(files.gz[[i]])
   }
 }
 
