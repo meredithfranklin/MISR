@@ -109,7 +109,8 @@ write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv")
 # Station Information
 #file <- "ftp://ftp.ncdc.noaa.gov/pub/data/noaa/isd-history.csv"
 #download.file(file, "isd-history.csv")
-stations <- read.csv("/Users/mf/Documents/NCDC/isd-history.csv") 
+setwd("/Users/mf/Documents/NCDC/")
+stations <- read.csv("isd-history.csv") 
 st.ca<-stations[stations$CTRY=="US" & stations$STATE=="CA",]
 st.ca$BEGIN <- as.numeric(substr(st.ca$BEGIN, 1, 4))
 st.ca$END <- as.numeric(substr(st.ca$END, 1, 4))
@@ -119,59 +120,68 @@ st.so.ca<-st.so.ca[st.so.ca$LON>= -120 & st.so.ca$LON<= -117,]
 # Remove Catalina and buoys
 st.so.ca<-st.so.ca[-(grep(c("BUOY|CATALINA|ISLAND"),st.so.ca$STATION.NAME)),]
 st.so.ca<-st.so.ca[complete.cases(st.so.ca),]
-write.csv(st.so.ca,"/Users/mf/Documents/NCDC/SoCalNCDCsites.csv")
+# write.csv(st.so.ca,"/Users/mf/Documents/NCDC/SoCalNCDCsites.csv",row.names = FALSE)
+# st.so.ca<-read.csv("/Users/mf/Documents/NCDC/SoCalNCDCsites.csv")
 
-# Pick WBAN 722880 (Burbank)
-la.weather<-st.so.ca[st.so.ca$USAF %in% 722880,]
-files.gz <- list.files("./Burbank Met",full.names=TRUE,pattern=".gz")
 for (y in 2008:2009){
-  y.la.list<-la.weather[la.weather$BEGIN<=y & la.weather$END>=y,]
-  for (s in 1:dim(y.la.list)[1])
+  y.la.list<-st.so.ca[st.so.ca$BEGIN<=y & st.so.ca$END>=y,]
+  for (s in 1:dim(y.la.list)[1]){
     filename<-paste(sprintf("%06d",y.la.list[s,1]),"-",sprintf("%05d",y.la.list[s,2]),"-",y,".gz",sep="")
-    download.file(paste("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/", y,"/",filename,sep=""), paste("/Users/mf/Documents/NCDC/Burbank Met/",filename,sep=""), method='wget') 
+    download.file(paste("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/", y,"/",filename,sep=""), paste("/Users/mf/Documents/NCDC/SoCal Met/",filename,sep=""), method='wget') 
+}
+
+  files.gz <- list.files("./SoCal Met",full.names=TRUE,pattern=".gz")
       for(i in 1:length(files.gz)){
        gunzip(files.gz[[i]])
-  }
 }
 
+# Extract data from downloaded files
+  # Need to define column widths, see ftp://ftp.ncdc.noaa.gov/pub/data/noaa/ish-format-document.pdf
 column.widths <- c(4, 6, 5, 4, 2, 2, 2, 2, 1, 6, 7, 5, 5, 5, 4, 3, 1, 1, 4, 1, 5, 1, 1, 1, 6, 1, 1, 1, 5, 1, 5, 1, 5, 1)
-stations <- as.data.frame(matrix(NA, length(files),6))
-names(stations) <- c("USAFID", "WBAN", "YR", "LAT","LONG", "ELEV")
+#stations <- as.data.frame(matrix(NA, length(files.gz),))
+#names(stations) <- c("USAFID", "WBAN", "YR", "LAT","LONG", "ELEV")
 
-files <- list.files("./Burbank Met",full.names=TRUE)
-for (i in 1:length(files)) {
-  data <- read.fwf(files[i], column.widths)
-  data <- data[, c(2:8, 10:11, 13, 16, 19, 29,31, 33)]
-  names(data) <- c("USAFID", "WBAN", "YR", "M","D", "HR", "MIN", "LAT", "LONG", "ELEV","WIND.DIR", "WIND.SPD", "TEMP", "DEW.POINT","ATM.PRES")
-  data$LAT <- data$LAT/1000
-  data$LONG <- data$LONG/1000
-  data$WIND.SPD <- data$WIND.SPD/10
-  data$TEMP <- data$TEMP/10
-  data$DEW.POINT <- data$DEW.POINT/10
-  data$ATM.PRES <- data$ATM.PRES/10
-  write.csv(data, file = paste(files[i],".csv", sep = ""), row.names = FALSE)
-  stations[i, 1:3] <- data[1, 1:3]
-  stations[i, 4:6] <- data[1, 8:10]
+met.files <- list.files("./SoCal Met",full.names=TRUE,include.dirs = FALSE, recursive=FALSE)
+met.list<-vector('list',length(met.files))
+for (i in 1:length(met.files)) {
+  if (file.info(met.files[i])$size>0){
+  met.data <- read.fwf(met.files[i], column.widths)
+  #data <- data[, c(2:8, 10:11, 13, 16, 19, 29,31, 33)]
+  names(met.data) <- c("ID","USAFID", "WBAN", "year", "month","day", "hour", "min","srcflag", "lat", "lon",
+                    "typecode","elev","callid","qcname","wind.dir", "wind.dir.qc","wind.type.code","wind.sp","wind.sp.qc",
+                        "ceiling.ht","ceiling.ht.qc","ceiling.ht.method","sky.cond","vis.dist","vis.dist.qc","vis.var","vis.var.qc",
+                            "temp","temp.qc", "dew.point","dew.point.qc","atm.press","atm.press.qc")
+  # change 9999 to missing
+  met.data$wind.dir<-ifelse(met.data$wind.dir==999,NA,met.data$wind.dir)
+  met.data$wind.sp<-ifelse(met.data$wind.sp==9999,NA,met.data$wind.sp)
+  met.data$ceiling.ht<-ifelse(met.data$ceiling.ht==99999,NA,met.data$ceiling.ht)
+  met.data$vis.dist<-ifelse(met.data$vis.dist==999999,NA,met.data$vis.dist)
+  met.data$temp<-ifelse(met.data$temp==9999,NA,met.data$temp)
+  met.data$dew.point<-ifelse(met.data$dew.point==9999,NA,met.data$dew.point)
+  met.data$atm.press<-ifelse(met.data$atm.press==99999,NA,met.data$atm.press)
+  
+  # conversions and scaling factors
+  met.data$lat <- met.data$lat/1000
+  met.data$lon <- met.data$lon/1000
+  met.data$wind.sp <- met.data$wind.sp/10
+  met.data$temp <- met.data$temp/10
+  met.data$dew.point <- met.data$dew.point/10
+  met.data$atm.press<- met.data$atm.press/10
+  #drop some variables
+  met.data<-subset(met.data, select=-c(ID,srcflag,typecode,callid,qcname))
+  # take average of hours matching MISR overpass time
+  met.data.misr.hrs<-met.data[met.data$hour %in% c(10,11,12),]
+  met.data.misr.avg<- ddply(met.data.misr.hrs, .(month, day, year,lat,lon,USAFID,elev), summarise, temp=mean(temp,na.rm=TRUE),
+                            dew.point=mean(dew.point,rm=TRUE), ceiling.ht=mean(ceiling.ht,na.rm=TRUE), wind.dir=mean(wind.dir,na.rm=TRUE),
+                              wind.sp=mean(wind.sp,na.rm=TRUE), atm.press=mean(atm.press,na.rm=TRUE))
+
+  met.list[[i]]<-met.data.misr.avg
+  }
+  else{ print("Zero file")
+    }
 }
 
-files.csv <- list.files("./Burbank Met/Processed",full.names=TRUE)
-data.daily.all<-NULL
-for (i in 1:length(files.csv)) {
-  data<-read.csv(files.csv[i])
-  data$TEMP<-ifelse(data$TEMP==999.9,NA,data$TEMP)
-  data$DEW.POINT<-ifelse(data$DEW.POINT==999.9,NA,data$DEW.POINT)
-  data$WIND.DIR<-ifelse(data$WIND.DIR==999.9,NA,data$WIND.DIR)
-  data$WIND.SPD<-ifelse(data$WIND.SPD==999.9,NA,data$WIND.SPD)
-  data$ATM.PRES<-ifelse(data$ATM.PRES>2000,NA,data$ATM.PRES)
-  data.daily<-ddply(data,.(YR,M,D),summarize,temp=mean(TEMP,na.rm=TRUE),
-                    dp.temp=mean(DEW.POINT,na.rm=TRUE),wd.sp=mean(WIND.SPD,na.rm=TRUE),
-                    wd.dir=mean(WIND.DIR,na.rm=TRUE),atm.pres=mean(ATM.PRES,na.rm=TRUE))
-  data.daily.all <- rbind(data.daily.all, data.daily)
-}
-data.daily.all$date<-as.Date(ISOdate(data.daily.all$YR,data.daily.all$M, data.daily.all$D))
-write.csv(data.daily.all,"/Users/mf/Documents/NCDC/LAMet.csv") 
-
-
+met.08.09 <- do.call("rbind", met.list) 
 
 # match MISR and AQS by date and distance
 # Take unique dates from MISR file
