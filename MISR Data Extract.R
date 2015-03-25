@@ -10,7 +10,8 @@
 library(ncdf) # for reading netcdf file formats
 library(date) # for converting julian dates
 library(chron) # for converting julian dates
-library(plyr) # for easy merging
+#library(plyr) # for easy merging/subsetting
+library(dplyr) #for easy merging/subsetting
 library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
 library(proj4) # for map projections
@@ -182,6 +183,13 @@ for (i in 1:length(met.files)) {
 }
 
 met.08.09 <- do.call("rbind", met.list) 
+# add projected coordinates
+proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
+newcoords.met<-project(as.matrix(cbind(met.08.09$lon, met.08.09$lat)), proj=proj.albers)
+met.08.09$x<-newcoords.met[,1]
+met.08.09$y<-newcoords.met[,2]
+
+write.csv(met.08.09,"/Users/mf/Documents/MISR/Data/met.08.09.csv")
 
 # match MISR and AQS by date and distance
 # Take unique dates from MISR file
@@ -214,10 +222,34 @@ MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
 MISR.AQS <- do.call("rbind", MISR.AQS.match.all)
 write.csv(MISR.AQS,"/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
 
+# Add in met data to matched MISR AQS. Take met site with minimum distance
+misr.aqs.days<-MISR.AQS %>% distinct(round(julian,digits=0))
+MISR.AQS.met.match.all<-vector('list',length(met.08.09$year))
+for (i in 1:length(MISR.AQS$date)){
+  met.daily<-met.08.09[met.08.09$day %in% MISR.AQS[i,]$day & 
+                         met.08.09$month %in% MISR.AQS[i,]$month &
+                         met.08.09$year %in% MISR.AQS[i,]$year,]
+
+  #distance matrix
+  dist<-rdist(cbind(met.daily$x,met.daily$y),cbind(MISR.AQS$x,MISR.AQS$y))
+  # take pixel which is smallest distance from AQS site
+  # identify row of distance matrix (misr pixel id), with smallest column is aqs site
+  
+  MISR.AQS.match.list<-vector('list',length(dist[1,]))
+  for (j in 1:length(dist[1,])){ 
+    if (min(dist[,j])<=5){
+      MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel
+    } 
+    #print(min(dist[,j]))
+    #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
+  }
+  MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
+  
+}
 
 # ICV data
 # ICV<-read.sas7bdat("/Users/mf/Documents/AQS/STN/seasonal4wkdata_no2wk_aeavg_all.sas7bdat")
-ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV Comparisons Working Group/icv2_seasonal_20mar15.sas7bdat")
+ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV Comparisons Working Group/icv2_seasonal_27jan15.sas7bdat")
 
 # Create variables and export to csv
 ICV$date.start<- chron(ICV$startdate, origin=c(month=1, day=1, year= 1960))

@@ -11,6 +11,8 @@ setwd("/Users/mf/Documents/MISR/Reports")
 AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
 MISR.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
 MISR.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
+MISR.AQS<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
+met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met.08.09")
 
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 # Project the map
@@ -20,22 +22,43 @@ newcoordsCA<-project(CA, proj=proj.albers)
 
 
 # pick a particular date for mapping
-misr.01.16.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==1 & misr.08.09$day==16,]
-aqs.01.16.08<-AQS.08.09.ss[AQS.08.09.ss$year==2008 & AQS.08.09.ss$month==1 & AQS.08.09.ss$day==16,]
-
+misr.04.21.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==4 & misr.08.09$day==21,]
+aqs.04.21.08<-AQS.08.09.ss[AQS.08.09.ss$year==2008 & AQS.08.09.ss$month==4 & AQS.08.09.ss$day==21,]
+met.04.21.08<-met.08.09[met.08.09$year==2008 & met.08.09$month==4 & met.08.09$day==21,]
 #Create a function to generate a continuous color palette
 rbPal <- colorRampPalette(tim.colors(32))
-AOD.breaks <-quantile(misr.01.16.08$AOD, seq(0,1,1/10))
+AOD.breaks <-quantile(misr.04.21.08$AOD, seq(0,1,1/10))
 col.ramp <-rbPal(length(AOD.breaks))  
-misr.01.16.08$Col <- rbPal(10)[as.numeric(cut(misr.01.16.08$AOD,
-                                               breaks = quantile(misr.01.16.08$AOD, seq(0,1,1/10))))]
+misr.04.21.08$Col <- rbPal(10)[as.numeric(cut(misr.04.21.08$AOD, breaks = quantile(misr.04.21.08$AOD, seq(0,1,1/10))))]
 pdf('MISRmap1.pdf')
-map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=8)
-PlotOnStaticMap(map,misr.01.16.08$lat, misr.01.16.08$lon, cex=.7,pch=22,bg=misr.01.16.08$Col)
-PlotOnStaticMap(map,aqs.01.16.08$SITE_LATITUDE,aqs.01.16.08$SITE_LONGITUDE, cex=1.5,pch=*,col="black",add=TRUE)
-PlotOnStaticMap(map,st.so.ca$LAT, st.so.ca$LON, cex=1.5,pch="+", col='purple',add=TRUE)
+map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
+PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=.7,pch=22,bg=misr.04.21.08$Col)
+PlotOnStaticMap(map,aqs.04.21.08$SITE_LATITUDE,aqs.04.21.08$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
+#PlotOnStaticMap(map,st.so.ca$LAT, st.so.ca$LON, cex=1.5,pch="*", col='lightblue',add=TRUE)
+legend('bottomleft',legend=c(round(AOD.breaks,digits=2),"AQS"),fill=c(col.ramp,"lightblue"),box.col='white',bty='o',bg="white",cex=0.5,title="MISR AOD 04/21/08")
+dev.off()
 
-legend('topright',legend=c(round(AOD.breaks,digits=2),"AQS","Met"),fill=c(col.ramp,"green","purple"),bty='o',box.col='white',cex=0.9,title="AOD 01/16/08")
+rbPal <- colorRampPalette(tim.colors(32))
+AOD.breaks <-quantile(misr.04.21.08$AODsmall, seq(0,1,1/10))
+col.ramp <-rbPal(length(AOD.breaks))  
+misr.04.21.08$Col <- rbPal(10)[as.numeric(cut(misr.04.21.08$AODsmall, breaks = quantile(misr.04.21.08$AODsmall, seq(0,1,1/10))))]
+pdf('MISRmap2.pdf')
+map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
+PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=.7,pch=22,bg=misr.04.21.08$Col)
+PlotOnStaticMap(map,aqs.04.21.08$SITE_LATITUDE,aqs.04.21.08$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
+#PlotOnStaticMap(map,st.so.ca$LAT, st.so.ca$LON, cex=1.5,pch="*", col='lightblue',add=TRUE)
+legend('bottomleft',legend=c(round(AOD.breaks,digits=2),"AQS"),fill=c(col.ramp,"lightblue"),box.col='white',bty='o',bg='white',cex=0.5,title="MISR AOD Small 04/21/08")
+dev.off()
+
+
+misr.aqs.04.21.08<-MISR.AQS[MISR.AQS$year==2008 & MISR.AQS$month==4 & MISR.AQS$day==21,]
+met.04.21.08<-met.08.09[met.08.09$year==2008 & met.08.09$month==4 &met.08.09$day==21, ]
+# Map matched data
+pdf("MISRmap3.pdf")
+map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
+PlotOnStaticMap(map,misr.aqs.04.21.08$lat, misr.aqs.04.21.08$lon, cex=1,pch=22,col='lightblue')
+PlotOnStaticMap(map,met.04.21.08$lat,met.04.21.08$lon, cex=1,pch="*",col="purple",add=TRUE)
+legend(locator(1),legend=c("MISR-AQS","NOAA met site"),pch=c(22,8),col=c("lightblue","purple"),box.col='white',bty='o',bg='white',cex=0.5,title="Matched MISR AQS 04/21/08")
 dev.off()
 
 PlotOnStaticMap(map,ICVwarm.fine$lat,ICVwarm.fine$lon, cex=0.9,pch=21,bg="green",add=TRUE)
@@ -43,18 +66,23 @@ PlotOnStaticMap(map,MISR.Aeronet$lat, MISR.Aeronet$lon, pch="+", col='green',add
 PlotOnStaticMap(map,MISR.Aeronet.08.09.merged.close$lat,MISR.Aeronet.08.09.merged.close$lon,pch="+",col="black",add=TRUE)
 legend('bottomleft',legend=(round(AOD.breaks,digits=2)),fill=col.ramp,bty='o',box.col='white',cex=0.9,title="AOD Sep 09")
 
-# Mapping AQS
+
 rbPal <- colorRampPalette(tim.colors(32))
-PM.breaks <-quantile(aqs.PM25.09.09$PM25, seq(0,1,1/10))
-col.ramp <-rbPal(length(PM.breaks))  
-aqs.PM25.09.09$Col <- rbPal(10)[as.numeric(cut(aqs.PM25.09.09$PM25,breaks = quantile(aqs.PM25.09.09$PM25, seq(0,1,1/10))))]
-zoom <- min(MaxZoom(range(aqs.PM25.09.09$lat), range(aqs.PM25.09.09$lon)))
-map <- GetMap(center=c(34.30, -118.500), maptype='terrain', zoom=zoom)
-#PlotOnStaticMap(map,aqs.PM25.09.09$lat,aqs.PM25.09.09$lon, cex=1.5,pch=21,bg=aqs.PM25.09.09$Col)
-PlotOnStaticMap(map,ICVnew.ss$lat,ICVnew.ss$lon, cex=0.9,pch=21,bg="red")
-#PlotOnStaticMap(map,lat=34.380, lon= -117.680, cex=1.6,pch="+", col='purple',add=TRUE)
-#PlotOnStaticMap(map,aqs.PM25.nodups$lat,aqs.PM25.nodups$lon,pch=19,cex=0.7,add=TRUE)
-legend('bottomleft',legend=(round(PM.breaks,digits=2)),fill=col.ramp,bty='o',box.col='white',cex=0.9,title="PM25 Sep 09")
+AOD.breaks <-quantile(misr.04.21.08$AODsmall, seq(0,1,1/10))
+col.ramp <-rbPal(length(AOD.breaks))  
+misr.04.21.08$Col <- rbPal(10)[as.numeric(cut(misr.04.21.08$AODsmall, breaks = quantile(misr.04.21.08$AODsmall, seq(0,1,1/10))))]
+pdf("MISRmap4.pdf")
+map <- GetMap(center=c(34.5,  -118.5), maptype='satellite', zoom=8)
+PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=1.2,pch=22,bg=misr.04.21.08$Col)
+PlotOnStaticMap(map,ICV$lat,ICV$lon, cex=1,pch=22,col="lightblue",add=TRUE)
+legend('bottomleft',legend=c(round(AOD.breaks,digits=2),"ICV"),fill=c(col.ramp,"lightblue"),box.col='white',bty='o',bg='white',cex=0.5,title="MISR AOD Small 04/21/08")
+dev.off()
+
+PlotOnStaticMap(map,ICVwarm.fine$lat,ICVwarm.fine$lon, cex=0.9,pch=21,bg="green",add=TRUE)
+PlotOnStaticMap(map,MISR.Aeronet$lat, MISR.Aeronet$lon, pch="+", col='green',add=TRUE)
+PlotOnStaticMap(map,MISR.Aeronet.08.09.merged.close$lat,MISR.Aeronet.08.09.merged.close$lon,pch="+",col="black",add=TRUE)
+legend('bottomleft',legend=(round(AOD.breaks,digits=2)),fill=col.ramp,bty='o',box.col='white',cex=0.9,title="AOD Sep 09")
+
 
 # Mapping ICV
 rbPal <- colorRampPalette(tim.colors(32))
