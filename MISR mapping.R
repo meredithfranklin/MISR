@@ -30,6 +30,7 @@ rbPal <- colorRampPalette(tim.colors(32))
 AOD.breaks <-quantile(misr.04.21.08$AOD, seq(0,1,1/10))
 col.ramp <-rbPal(length(AOD.breaks))  
 misr.04.21.08$Col <- rbPal(10)[as.numeric(cut(misr.04.21.08$AOD, breaks = quantile(misr.04.21.08$AOD, seq(0,1,1/10))))]
+
 pdf('MISRmap1.pdf')
 map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
 PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=.7,pch=22,bg=misr.04.21.08$Col)
@@ -60,6 +61,26 @@ PlotOnStaticMap(map,misr.aqs.04.21.08$lat, misr.aqs.04.21.08$lon, cex=1,pch=22,c
 PlotOnStaticMap(map,met.04.21.08$lat,met.04.21.08$lon, cex=1,pch="*",col="purple",add=TRUE)
 legend(locator(1),legend=c("MISR-AQS","NOAA met site"),pch=c(22,8),col=c("lightblue","purple"),box.col='white',bty='o',bg='white',cex=0.5,title="Matched MISR AQS 04/21/08")
 dev.off()
+
+##### PREDICTED PM25 ######
+jet.colors <-
+  colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan",
+                     "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
+rbPal <- colorRampPalette(jet.colors(32))
+PM.breaks <-quantile(misr.04.21.08$predPM25, seq(0,1,1/10))
+col.ramp <-rbPal(length(PM.breaks))  
+misr.04.21.08$Col <- rbPal(10)[as.numeric(cut(misr.04.21.08$predPM25, breaks = quantile(misr.04.21.08$predPM25, seq(0,1,1/10))))]
+
+pdf('MISRmap4.pdf')
+map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
+PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=.7,pch=22,bg=misr.04.21.08$Col)
+#PlotOnStaticMap(map,AQS.08.09.ss$SITE_LATITUDE,AQS.08.09.ss$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
+legend('bottomleft',legend=c(round(PM.breaks,digits=2)),fill=c(col.ramp),box.col='white',bty='o',bg="white",cex=0.5,title="Predicted PM2.5 04/21/08")
+dev.off()
+
+
+
+
 
 PlotOnStaticMap(map,ICVwarm.fine$lat,ICVwarm.fine$lon, cex=0.9,pch=21,bg="green",add=TRUE)
 PlotOnStaticMap(map,MISR.Aeronet$lat, MISR.Aeronet$lon, pch="+", col='green',add=TRUE)

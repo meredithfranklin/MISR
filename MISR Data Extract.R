@@ -35,6 +35,7 @@ misr.list<-vector('list',length(misr.files))
     AODlargefrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Large")
     AODnonspher<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Nonsphere")
     SSAlbedo<-get.var.ncdf(dat,"RegLowestResidSpectralSSA")
+    land.water.mask<-get.var.ncdf(dat,"AlgTypeFlag")#land=3 water=1
     AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmallfrac=AODsmallfrac,AODmedfrac=AODmedfrac,AODlargefrac=AODlargefrac,AODnonspher=AODnonspher,SSAlbedo=SSAlbedo)
     misr.list[[i]]<-AOD.dat
 }
@@ -57,13 +58,13 @@ newcoords.misr<-project(as.matrix(cbind(misr.08.09$lon, misr.08.09$lat)), proj=p
 misr.08.09$x<-newcoords.misr[,1]
 misr.08.09$y<-newcoords.misr[,2]
 
-write.csv(misr.08.09,"misr.08.09.csv")
+#write.csv(misr.08.09,"misr.08.09.csv")
 
 # Take monthly averages for matching with ICV surface data
 misr.08.09.monthly <- ddply(misr.08.09, .(lat,lon,month), summarise, AOD.month=mean(AOD),
                         AODsmall.month=mean(AODsmall), AODmed.month=mean(AODmed), 
                         AODlarge.month=mean(AODlarge),AODnonsph.month=mean(AODnonspher))
-write.csv(misr.08.09.monthly,"misr.08.09.monthly.csv")
+#write.csv(misr.08.09.monthly,"misr.08.09.monthly.csv")
 
 
 ##### Daily AQS data ######
@@ -103,8 +104,9 @@ AQS.08.09.ss<-AQS.08.09[AQS.08.09$SITE_LONGITUDE>=-120 & AQS.08.09$SITE_LONGITUD
 AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LATITUDE>=33.2 & AQS.08.09.ss$SITE_LATITUDE<=35,]
 AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LONGITUDE != -119.4869,] #Remove Catalina
 
-write.csv(AQS.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
-write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv")
+#write.csv(AQS.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
+#write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv")
+AQS.08.09.ss<-read.csv("/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
 
 ##### Daily NCDC data #####
 # Station Information
@@ -190,11 +192,15 @@ met.08.09$x<-newcoords.met[,1]
 met.08.09$y<-newcoords.met[,2]
 
 write.csv(met.08.09,"/Users/mf/Documents/MISR/Data/met.08.09.csv")
+met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met.08.09.csv")
+
 
 # match MISR and AQS by date and distance
 # Take unique dates from MISR file
 misr.days<-misr.08.09 %>% distinct(round(julian,digits=0))
 MISR.AQS.match.all<-vector('list',length(AQS.08.09.ss$Date))
+met.AQS.match.all<-vector('list',length(AQS.08.09.ss$Date))
+                          
 for (i in 1:length(misr.days$date)){
   aqs.daily<-AQS.08.09.ss[AQS.08.09.ss$day %in% misr.days[i,]$day & 
                             AQS.08.09.ss$month %in% misr.days[i,]$month &
@@ -202,8 +208,13 @@ for (i in 1:length(misr.days$date)){
   misr.daily<-misr.08.09[misr.08.09$day %in% misr.days[i,]$day & 
                            misr.08.09$month %in% misr.days[i,]$month &
                            misr.08.09$year %in% misr.days[i,]$year,]
+  met.daily<-met.08.09[met.08.09$day %in% misr.days[i,]$day &
+                         met.08.09$month %in% misr.days[i,]$month & 
+                         met.08.09$year %in% misr.days[i,]$year,]
   #distance matrix
   dist<-rdist(cbind(misr.daily$x,misr.daily$y),cbind(aqs.daily$x,aqs.daily$y))
+  dist.met<-rdist(cbind(met.daily$x,met.daily$y),cbind(aqs.daily$x,aqs.daily$y))
+  
   # take pixel which is smallest distance from AQS site
   # identify row of distance matrix (misr pixel id), with smallest column is aqs site
   
@@ -214,10 +225,20 @@ for (i in 1:length(misr.days$date)){
     } 
     #print(min(dist[,j]))
     #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
-}
-MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
+  }
+  MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list) 
+
+  met.AQS.match.list<-vector('list',length(dist[1,]))
+  for (j in 1:length(dist[1,])){ 
+      met.AQS.match.list[[j]]<-data.frame(met.daily[which.min(dist.met[,j]),],aqs.daily[j,]) # identifies misr pixel
+    } 
+    #print(min(dist[,j]))
+    #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
+  }
+  met.AQS.match.all[[i]] <- do.call("rbind", met.AQS.match.list)
 
 }
+
 
 MISR.AQS <- do.call("rbind", MISR.AQS.match.all)
 write.csv(MISR.AQS,"/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
