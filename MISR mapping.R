@@ -9,10 +9,11 @@ setwd("/Users/mf/Documents/MISR/Reports")
 
 # Read processed data
 AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
+STN.08.09<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.csv")
 MISR.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
 MISR.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
 MISR.AQS<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
-met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met.08.09")
+met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met.08.09.csv")
 
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 # Project the map
@@ -35,7 +36,7 @@ pdf('MISRmap1.pdf')
 map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
 PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=.7,pch=22,bg=misr.04.21.08$Col)
 PlotOnStaticMap(map,aqs.04.21.08$SITE_LATITUDE,aqs.04.21.08$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
-#PlotOnStaticMap(map,st.so.ca$LAT, st.so.ca$LON, cex=1.5,pch="*", col='lightblue',add=TRUE)
+PlotOnStaticMap(map,STN.site.CA$Latitude, STN.site.CA$Longitude, cex=1.5,pch="*", col='purple',add=TRUE)
 legend('bottomleft',legend=c(round(AOD.breaks,digits=2),"AQS"),fill=c(col.ramp,"lightblue"),box.col='white',bty='o',bg="white",cex=0.5,title="MISR AOD 04/21/08")
 dev.off()
 
@@ -57,7 +58,7 @@ met.04.21.08<-met.08.09[met.08.09$year==2008 & met.08.09$month==4 &met.08.09$day
 # Map matched data
 pdf("MISRmap3.pdf")
 map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
-PlotOnStaticMap(map,misr.aqs.04.21.08$lat, misr.aqs.04.21.08$lon, cex=1,pch=22,col='lightblue')
+PlotOnStaticMap(map,aqs.04.21.08$SITE_LATITUDE, aqs.04.21.08$SITE_LONGITUDE, cex=1,pch=22,col='lightblue')
 PlotOnStaticMap(map,met.04.21.08$lat,met.04.21.08$lon, cex=1,pch="*",col="purple",add=TRUE)
 legend(locator(1),legend=c("MISR-AQS","NOAA met site"),pch=c(22,8),col=c("lightblue","purple"),box.col='white',bty='o',bg='white',cex=0.5,title="Matched MISR AQS 04/21/08")
 dev.off()
