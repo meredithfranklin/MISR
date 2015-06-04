@@ -43,12 +43,13 @@ misr.list<-vector('list',length(misr.files))
 misr.08.09<-do.call("rbind", misr.list)
 
 # Convert Julian dates, create month day year variables for matching with surface measures
-misr.08.09$date<- chron(misr.08.09$julian, origin=c(month=11, day=24, year= -4713))
+misr.08.09$date<- dates(misr.08.09$julian, origin=c(month=11, day=24, year= -4713))
+misr.08.09$date2<- mdy(misr.08.09$date) #use lubridate function for date matching (ICV)
 
 misr.08.09$year<-years(misr.08.09$date)
 misr.08.09$month<-as.numeric(months(misr.08.09$date))
 misr.08.09$day<-as.numeric(days(misr.08.09$date))
-misr.08.09$date2<-
+
 # multiply fraction by AOD to get AODsmall, AODmed, AODlarge
 misr.08.09$AODsmall<-misr.08.09$AODsmallfrac*misr.08.09$AOD
 misr.08.09$AODmed<-misr.08.09$AODmedfrac*misr.08.09$AOD
@@ -346,10 +347,12 @@ write.csv(MISR.AQS.met, "/Users/mf/Documents/MISR/Data/MISR.AQS.met.csv")
 #ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV Comparisons Working Group/icv2_seasonal_27jan15.sas7bdat")
 ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV2 Spatial Modeling/icv2spatial_01jun15.sas7bdat")
 #ICV<-ICV[,c(-33:-77,-87:-202)]
-ICV$datestart<-as.character(as.Date(ICV$startdate, origin='1960-01-01'))
-ICV$datestart2<-dates(ICV$startdate,origin=c(month=1,day=1,year=1960))
+#ICV$datestart<-as.character(as.Date(ICV$startdate, origin='1960-01-01'))
+ICV$datestart<-dates(ICV$startdate,origin=c(month=1,day=1,year=1960))
+ICV$datestart2<-mdy(ICV$datestart)
+ICV$dateend<-dates(ICV$enddate,origin=c(month=1,day=1,year=1960))
+ICV$dateend2<-mdy(ICV$dateend)
 
-ICV$dateend<-as.character(as.Date(ICV$enddate, origin='1960-01-01'))
 date<-strsplit(ICV$datestart,"-")
 ICV$year.start<-as.numeric(sapply(date, "[[", 1) )
 ICV$month.start<-as.numeric(sapply(date, "[[", 2) )
@@ -363,27 +366,25 @@ ICV$y<-newcoords.icv[,2]
 cs<-ICV[ICV$idtype=="CS",]
 # find unique startdates
 ICV.startdays<-ICV %>% distinct(datestart2)
+ICV.startdays$sampling.interval <- as.interval(ICV.startdays$datestart2, ICV.startdays$dateend2)
+
 # take MISR averages between each ICV start and end date
 # format MISR and ICV date variables
 
 # identify MISR observations within datestart and dateend
-i=1
-misr.icv.dates<-misr.08.09[misr.08.09$date >= ICV.startdays[i,]$datestart2 & misr.08.09$date < ICV.startdays[i,]$datestart2+32, ]
+MISR.ICV.match.all<-vector('list',length(ICV$date))
 
-
-
-# take running monthly mean of MISR data
-misr.08.09 <- misr.08.09[with(misr.08.09,order(lat, lon,year,month,day)),]
-misr.08.09.monthly <- ddply(misr.08.09, .(lat,lon,month,year), summarise, AOD.month=mean(AOD),
+for (i in 1:length(ICV.startdays$startdate)){
+  misr.icv.date.match<-misr.08.09[misr.08.09$date2 %within% ICV.startdays$sampling.interval[i],]
+  misr.monthly <- ddply(misr.icv.date.match, .(x,y), summarise, AOD.month=mean(AOD),
                             AODsmall.month=mean(AODsmall), AODmed.month=mean(AODmed), 
                             AODlarge.month=mean(AODlarge), AODnonsph.month=mean(AODnonspher))
-misr.08.09.monthly <- misr.08.09.monthly[with(misr.08.09.monthly,order(year, month)),]
-newcoords.misr.08.09.monthly<-project(as.matrix(cbind(misr.08.09.monthly$lon, misr.08.09.monthly$lat)), proj=proj.albers)
-misr.08.09.monthly$x<-newcoords.misr.08.09.monthly[,1]
-misr.08.09.monthly$y<-newcoords.misr.08.09.monthly[,2]
+# merge with icv by startdate
 
-# doesn't work
-misr.08.09.running<-ddply(misr.08.09,.(lat, lon),summarise, AOD.1m=running(AOD,width=2,fun=mean, pad=TRUE))
+
+
+
+
 
 misr.months<-misr.08.09.monthly %>% distinct(month, year)
 misr.months<-misr.months[12:23,]
