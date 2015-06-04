@@ -90,16 +90,24 @@ MISR.STN.ss$julian2<-MISR.STN.ss$julian/10000
 plot(MISR.STN.ss$AOD,MISR.STN.ss$OC,xlab='MISR AOD',ylab='STN OC')
 abline(lm(OC~AOD, data=MISR.STN.ss), col="red")
 
-plot(MISR.STN.ss$AOD,MISR.STN.ss$SO4,xlab='MISR AOD',ylab='STN SO4')
-abline(lm(SO4~AOD, data=MISR.STN.ss), col="red")
+plot(MISR.STN.ss$AOD,MISR.STN.ss$EC,xlab='MISR AOD',ylab='STN EC')
+abline(lm(EC~AOD, data=MISR.STN.ss), col="red")
+
+plot(MISR.STN.ss$AOD,MISR.STN.ss$SO2,xlab='MISR AOD',ylab='STN SO4')
+abline(lm(SO2~AOD, data=MISR.STN.ss), col="red")
 
 plot(MISR.STN.ss$AOD,MISR.STN.ss$NH4,xlab='MISR AOD',ylab='STN NH4')
 abline(lm(NH4~AOD, data=MISR.STN.ss), col="red")
 
 OC.mod<-gam(OC~AOD, data=MISR.STN.ss)
-SO4.mod<-gam(SO4~AOD, data=MISR.STN.ss)
+SO4.mod<-gam(SO2~AOD, data=MISR.STN.ss)
 NH4.mod<-gam(NH4~AOD, data=MISR.STN.ss)
 
+# Regressions
+OCmod<-gam(OC~AOD+s(x,y,k=10), data=MISR.STN.ss)
+ECmod<-gam(EC~s(AOD)+julian, data=MISR.STN.ss)
+SO4mod<-gam(SO2~s(AOD), data=MISR.STN.ss)
+NH4mod<-gam(NH4~s(AOD), data=MISR.STN.ss)
 # Cross validation
 
 # Cross Validation PM10 (5 year models)
@@ -142,8 +150,9 @@ lines(gam.pred.list[[i]]$julian2,gam.pred.list[[i]]$gam.st.pred,col="red")
 lines(gam.pred.list[[i]]$julian2,gam.pred.list[[i]]$Daily.Mean.PM2.5.Concentration,col="black")
 
 # Spatio-temporal regression on matched data with meteorology
-lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS.met.ss)
-gam.st.MISR.AOD1<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.met.ss)
+lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration.x~AOD, data=MISR.AQS.met.ss)
+gam.st.MISR.AOD1<-gam(Daily.Mean.PM2.5.Concentration.x~s(AOD),na.action=na.exclude,data=MISR.AQS.met.ss)
+gam.st.MISR.AOD2<-gam(Daily.Mean.PM2.5.Concentration.x~s(AOD)+s(x.x,y.x)+s(julian2), na.action=na.exclude,data=MISR.AQS.met.ss)
 
 gam.st.MISR.AOD2<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x,y)+s(julian2)+dew.point, na.action=na.exclude,data=MISR.AQS.met.ss)
 
