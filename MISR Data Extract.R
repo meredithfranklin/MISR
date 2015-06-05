@@ -3,13 +3,14 @@
 # AQS Daily http://www.epa.gov/airdata/ad_data_daily.html
 # Aeronet data http://aeronet.gsfc.nasa.gov/
 # ICV data (CHS study)
-# December 2014, February 2015
+# December 2014, February-June 2015
 # Meredith Franklin
 ##############################################
 
 library(ncdf) # for reading netcdf file formats
 library(date) # for converting julian dates
 library(chron) # for converting julian dates
+library(lubridate) # for date interval matching
 library(plyr) # for easy merging/subsetting
 library(dplyr) #for easy merging/subsetting
 library(sas7bdat) # for reading SAS file formats
@@ -368,183 +369,38 @@ cs<-ICV[ICV$idtype=="CS",]
 ICV.startdays<-ICV %>% distinct(datestart2)
 ICV.startdays$sampling.interval <- as.interval(ICV.startdays$datestart2, ICV.startdays$dateend2)
 
-# take MISR averages between each ICV start and end date
-# format MISR and ICV date variables
 
-# identify MISR observations within datestart and dateend
 MISR.ICV.match.all<-vector('list',length(ICV$date))
 
 for (i in 1:length(ICV.startdays$startdate)){
+  # take MISR averages between each ICV start and end date
   misr.icv.date.match<-misr.08.09[misr.08.09$date2 %within% ICV.startdays$sampling.interval[i],]
   misr.monthly <- ddply(misr.icv.date.match, .(x,y), summarise, AOD.month=mean(AOD),
                             AODsmall.month=mean(AODsmall), AODmed.month=mean(AODmed), 
                             AODlarge.month=mean(AODlarge), AODnonsph.month=mean(AODnonspher))
 # merge with icv by startdate
+ #misr.monthly$startdate2<-ICV.startdays$datestart2[i]
+ icv.monthly<-ICV[ICV$datestart2 %in% ICV.startdays$datestart2[i],]
+ icv.monthly<-icv.monthly[!is.na(icv.monthly$x),]
+ # for ith startdate, calculate distance between misr pixels and ICV sites
+ dist<-rdist(cbind(misr.monthly$x,misr.monthly$y),cbind(icv.monthly$x,icv.monthly$y))
 
-
-
-
-
-
-misr.months<-misr.08.09.monthly %>% distinct(month, year)
-misr.months<-misr.months[12:23,]
-MISR.ICV.match.all<-vector('list',length(misr.months$julian.month))
-for (i in 1:length(misr.months[,1])){
-  icv.months<-ICV[ICV$month.start2 %in% misr.months[i,]$month &
-                             ICV$year.start %in% misr.months[i,]$year,]
-  if (dim(icv.months)[1] != 0){
-  dist<-rdist(cbind(misr.months$x,misr.months$y),cbind(icv.months$x,icv.months$y))
-  }
-  # take pixel which is smallest distance from AQS site (but within 5km)
-  # identify row of distance matrix (misr pixel id), with smallest column is aqs site
-  
   MISR.ICV.match.list<-vector('list',length(dist[1,]))
-  
-  for (j in 1:length(dist[1,])){ 
-    if (min(dist[,j])<=5){
-      MISR.ICV.match.list[[j]]<-data.frame(misr.months[which.min(dist[,j]),],icv.months[j,]) # identifies misr pixel close to AQS site
-    } 
-    #print(min(dist[,j]))
-    #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
-  }
+ 
+ for (j in 1:length(dist[1,])){ 
+   if (min(dist[,j])<=5){
+     MISR.ICV.match.list[[j]]<-data.frame(misr.monthly[which.min(dist[,j]),],icv.monthly[j,]) # identifies misr pixel close to ICV site
+   } 
+ }
   MISR.ICV.match.all[[i]] <- do.call("rbind", MISR.ICV.match.list) 
 }
 
 MISR.ICV <- do.call("rbind", MISR.ICV.match.all)
-write.csv(MISR.ICV,"/Users/mf/Documents/MISR/Data/MISR.ICV.csv",row.names=FALSE)
+write.csv(MISR.ICV,"/Users/mf/Documents/MISR/Data/MISR.ICV.csv",row.names=FALSE)  
 
-
-
-
-
-
-
-# Create variables and export to csv
-ICV$date.start<- chron(ICV$startdate, origin=c(month=1, day=1, year= 1960))
-ICV$date.end<- chron(ICV$enddate, origin=c(month=1, day=1, year= 1960))
-ICV$duration<-ICV$date.end-ICV$date.start
-
-counts.ICV <- ddply(ICV, .(ICV$date.start), nrow)
-glendora<-ICVnew.ss[ICVnew.ss$town=="GL",]
-
-# Convert lat and lon into planar x and y (California projection)
-proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
-newcoords.icv<-project(as.matrix(cbind(ICV$lat, ICV$lon)), proj=proj.albers)
-ICV$x<-newcoords.icv[,1]
-ICV$y<-newcoords.icv[,2]
-
-# Match MISR with ICV within month first take average of MISR between dates for each ICV
-misr.days<-misr.08.09 %>% distinct(round(julian,digits=0))
-MISR.ICV.match.all<-vector('list',length(ICV$Date))
-for (i in 1:length(misr.days$date)){
-  aqs.daily<-AQS.08.09.ss[AQS.08.09.ss$day %in% misr.days[i,]$day & 
-                            AQS.08.09.ss$month %in% misr.days[i,]$month &
-                            AQS.08.09.ss$year %in% misr.days[i,]$year,]
-  misr.daily<-misr.08.09[misr.08.09$day %in% misr.days[i,]$day & 
-                           misr.08.09$month %in% misr.days[i,]$month &
-                           misr.08.09$year %in% misr.days[i,]$year,]
-  #distance matrix
-  dist<-rdist(cbind(misr.daily$x,misr.daily$y),cbind(aqs.daily$x,aqs.daily$y))
-  # take pixel which is smallest distance from AQS site
-  # identify row of distance matrix (misr pixel id), with smallest column is aqs site
-  
-  MISR.AQS.match.list<-vector('list',length(dist[1,]))
-  for (j in 1:length(dist[1,])){ 
-    if (min(dist[,j])<=5){
-      MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel
-    } 
-    #print(min(dist[,j]))
-    #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
-  }
-  MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list)
-  
-}
-
-
-# AERONET MISR retrievals near aeronet Table mountain site
-MISR.Aeronet.08.09<-AOD.dat.08.09[AOD.dat.08.09$lat>34.35&AOD.dat.08.09$lat<34.45,]
-MISR.Aeronet.08.09<-MISR.Aeronet.08.09[MISR.Aeronet.08.09$lon>= -117.75&MISR.Aeronet.08.09$lon<= -117.6,]
-MISR.Aeronet.08.09$year<-ifelse(MISR.Aeronet.08.09$year2==8690,2008,
-                                ifelse(MISR.Aeronet.08.09$year2==8691,2009,
-                                       ifelse(MISR.Aeronet.08.09$year2==8692,2010,0)))
-
-# Aeronet Table Mountain coords 34.380, -117.680
-aeronet<-read.csv("./Aeronet/Aeronet_TableMt_lev20.csv")
-aeronet$date<-as.Date(aeronet$date, "%m/%d/%y")
-as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
-# 2008 and 2009 data
-aeronet.08.09<-aeronet[aeronet$date>="2008-01-01" & aeronet$date<="2009-12-31",]
-aeronet.08.09$month<-as.numeric(format(aeronet.08.09$date, "%m"))
-aeronet.08.09$day<-as.numeric(format(aeronet.08.09$date, "%d"))
-aeronet.08.09$year<-as.numeric(format(aeronet.08.09$date, "%Y"))
-aeronet.08.09$AOT558<-apply(cbind(as.numeric.factor(aeronet.08.09$AOT675),as.numeric.factor(aeronet.08.09$AOT440)),1,mean)
-aeronet.08.09 <- aeronet.08.09[with(aeronet.08.09,order(year, month,day,time)),]
-
-
-# monthly means
-aeronet.08.09.daily <- ddply(aeronet.08.09, .(day,month,year), summarise, 
-                             AOT558.daily=mean(AOT558),
-                             AOT675.daily=mean(as.numeric.factor(AOT675),na.rm=TRUE),
-                             AOT500.daily=mean(as.numeric.factor(AOT500),na.rm=TRUE),
-                             AOT440.daily=mean(as.numeric.factor(AOT440),na.rm=TRUE),
-                             AOT870.daily=mean(as.numeric.factor(AOT870),na.rm=TRUE),
-                             AOT558.sd=sd(AOT558),
-                             AOT675.sd=sd(as.numeric.factor(AOT675),na.rm=TRUE),
-                             AOT500.sd=sd(as.numeric.factor(AOT500),na.rm=TRUE),
-                             AOT440.sd=sd(as.numeric.factor(AOT440),na.rm=TRUE),
-                             AOT870.sd=sd(as.numeric.factor(AOT870),na.rm=TRUE))
-
-aeronet.08.09.daily$date <- (paste(aeronet.08.09.daily$month , aeronet.08.09.daily$day, aeronet.08.09.daily$year, sep = "/" ))
-aeronet.08.09.daily <- aeronet.08.09.daily[with(aeronet.08.09.daily,order(year, month,day)),]
-plot(aeronet.08.09.daily$AOT500.daily,aeronet.08.09.daily$AOT500.sd)
-
-
-# Merge MISR and Aeronet
-MISR.Aeronet.08.09.merged<-merge(aeronet.08.09.daily,MISR.Aeronet.08.09,by=c("year","month","day"))
-#Sepect closest point
-#MISR.Aeronet.08.09.merged.close<-MISR.Aeronet.08.09.merged[MISR.Aeronet.08.09.merged$lat>34.37&MISR.Aeronet.08.09.merged$lat<34.39,]
-
-#Compare
-plot(MISR.Aeronet.08.09.merged$AOT558.daily,MISR.Aeronet.08.09.merged$AOD,ylab="MISR AOD",xlab="Aeronet AOT 558nm (interpolated)")
-lm558<-lm(AOD~AOT558.daily,data=MISR.Aeronet.08.09.merged)
-abline(lm558)
-
-lm558small<-lm(AODsmall~AOT558.daily,data=MISR.Aeronet.08.09.merged)
-lm558med<-lm(AODmed~AOT558.daily,data=MISR.Aeronet.08.09.merged)
-lm558large<-lm(AODlarge~AOT558.daily,data=MISR.Aeronet.08.09.merged)
-
-plot(MISR.Aeronet.08.09.merged$AOT400.daily,MISR.Aeronet.08.09.merged$AOD,ylab="MISR AOD",xlab="Aeronet AOD 400nm (interpolated)")
-lm440<-lm(AOD~AOT440.daily,data=MISR.Aeronet.08.09.merged)
-
-plot(MISR.Aeronet.08.09.merged$AOT500.daily,MISR.Aeronet.08.09.merged$AOD,ylab="MISR AOD",xlab="Aeronet AOD 500nm")
-lm500<-lm(AOD~AOT500.daily,data=MISR.Aeronet.08.09.merged)
-
-plot(MISR.Aeronet.08.09.merged$AOT675.daily,MISR.Aeronet.08.09.merged$AOD,ylab="MISR AOD",xlab="Aeronet AOD 675nm")
-lm675<-lm(AOD~AOT675.daily,data=MISR.Aeronet.08.09.merged)
-
-plot(MISR.Aeronet.08.09.merged$AOT870.daily,MISR.Aeronet.08.09.merged$AOD,ylab="MISR AOD",xlab="Aeronet AOD 870nm",xlim=c(0,0.1),ylim=c(0,0.25))
-lm870<-lm(AOD~AOT870.daily,data=MISR.Aeronet.08.09.merged)
-
-library(lattice)
-xyplot(AOD ~ AOT558.daily | lat, data = MISR.Aeronet.08.09.merged, main="MISR AOD vs Aeronet 558nm (interpolated)",panel = function(x,  y, ...) {
-  panel.xyplot(x, y, ...)
-  panel.lmline(x, y, ...)})
-
-xyplot(AOD ~ AOT675.daily | lat, data = MISR.Aeronet.08.09.merged, main="MISR AOD vs Aeronet 675nm",panel = function(x,  y, ...) {
-  panel.xyplot(x, y, ...)
-  panel.lmline(x, y, ...)})
-
-xyplot(AOD ~ AOT500.daily | lat, data = MISR.Aeronet.08.09.merged, main="MISR AOD vs Aeronet 500nm",panel = function(x,  y, ...) {
-  panel.xyplot(x, y, ...)
-  panel.lmline(x, y, ...)})
-xyplot(AOD ~ AOT870.daily | lat, data = MISR.Aeronet.08.09.merged, main="MISR AOD vs Aeronet 870nm",panel = function(x,  y, ...) {
-  panel.xyplot(x, y, ...)
-  panel.lmline(x, y, ...)})
-
-# Correlation matrices
-
-cor(MISR.Aeronet.08.09.merged[,c(4:8,17:21)])
-
+#check
+MISR.ICV.ss <- na.omit(subset(MISR.ICV,select=c(AOD.month,PM25)))
+plot(PM25~AOD.month,data=MISR.ICV.ss)
 
 
 
