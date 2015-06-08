@@ -10,10 +10,11 @@ setwd("/Users/mf/Documents/MISR/Reports")
 # Read processed data
 AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
 STN.08.09<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.csv")
-MISR.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
+misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
 MISR.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
 MISR.AQS<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
 met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met.08.09.csv")
+ICV<-read.csv("/Users/mf/Documents/MISR/Data/ICV.csv")
 
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 # Project the map
@@ -22,6 +23,36 @@ CA <- data.frame(map("state","california", plot=FALSE)[c("x","y")])
 newcoordsCA<-project(CA, proj=proj.albers)
 
 
+# Plot of all locations and MISR grid
+#grid(nx = NULL, ny = nx, col = "lightgray", lty = "dotted",lwd = par("lwd"), equilogs = TRUE)
+misr.08.09<-misr.08.09[misr.08.09$land.water.mask==3,]
+MISR.grid<-unique(misr.08.09[,1:2])
+AQS.08.09.ss2<-AQS.08.09.ss[AQS.08.09.ss$SITE_LATITUDE>=33.599,]
+aqs.points<-unique(AQS.08.09.ss2[,15:16])
+STN.08.09.ss<-STN.08.09[STN.08.09$Latitude>=33.599,]
+STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
+stn.points<-unique(STN.08.09.ss[,19:20])
+ICV.ss<-ICV[ICV$wave=="CD",]
+ICV.points<-unique(ICV[,111:112])
+met.08.09.ss<-met.08.09[met.08.09$lat>33.599,]
+met.points<-unique(met.08.09.ss[,5:6])
+
+png('MISRmap_locations.png')
+map <- GetMap(center=c(34.5,  -118.3), maptype='hybrid', zoom=8)
+PlotOnStaticMap(map,MISR.grid$lat, MISR.grid$lon, cex=.5,pch=15,col="grey")
+PlotOnStaticMap(map,ICV.points$lat,ICV.points$lon, cex=.3,pch=19,col="green",add=TRUE)
+PlotOnStaticMap(map,aqs.points$SITE_LATITUDE,aqs.points$SITE_LONGITUDE, cex=1,pch='+',col="cyan",add=TRUE)
+PlotOnStaticMap(map,stn.points$Latitude, stn.points$Longitude, cex=.8,pch=19,col="magenta",add=TRUE)
+PlotOnStaticMap(map,met.points$lat, met.points$lon, cex=.7,pch=15,col="orangered",bg="orange",add=TRUE)
+legend("bottomleft",legend=c("MISR","ICV","AQS","STN","Weather"),pch=c(19,19,3,8,15),col=c("grey","green","cyan","magenta","orangered"),
+       box.col='white',bty='o',bg='white',cex=0.7,title="Legend")
+dev.off()
+
+map<-qmap("Los Angeles",maptype="hybrid",zoom=8)
+map2<-map+geom_point(data=met.points,aes(X=lon, Y=lat), size=2,color="orange")
+map3<-map2+geom_point(data=MISR.grid,aes(X=lon, Y=lat), size=2,color="grey")
+map4<-map3+geom_point(data=ICV.points,aes(X=lon, Y=lat), size=2,color="green")
+map4
 # pick a particular date for mapping
 misr.04.21.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==4 & misr.08.09$day==21,]
 aqs.04.21.08<-AQS.08.09.ss[AQS.08.09.ss$year==2008 & AQS.08.09.ss$month==4 & AQS.08.09.ss$day==21,]

@@ -38,7 +38,8 @@ misr.list<-vector('list',length(misr.files))
     AODnonspher<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Nonsphere")
     SSAlbedo<-get.var.ncdf(dat,"RegLowestResidSpectralSSA")
     land.water.mask<-get.var.ncdf(dat,"AlgTypeFlag")#land=3 water=1
-    AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmallfrac=AODsmallfrac,AODmedfrac=AODmedfrac,AODlargefrac=AODlargefrac,AODnonspher=AODnonspher,SSAlbedo=SSAlbedo)
+    AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmallfrac=AODsmallfrac,AODmedfrac=AODmedfrac,
+                        AODlargefrac=AODlargefrac,AODnonspher=AODnonspher,SSAlbedo=SSAlbedo,land.water.mask=land.water.mask)
     misr.list[[i]]<-AOD.dat
 }
 misr.08.09<-do.call("rbind", misr.list)
@@ -179,6 +180,9 @@ proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-40000
 newcoords.stn<-project(as.matrix(cbind(STN.08.09.all$Longitude, STN.08.09.all$Latitude)), proj=proj.albers)
 STN.08.09.all$x<-newcoords.stn[,1]
 STN.08.09.all$y<-newcoords.stn[,2]
+
+STN.08.09.ss<-STN.08.09.all[STN.08.09.all$Latitude>=33.599,]
+STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
 
 #write.csv(STN.08.09.all,"STN.08.09.csv",row.names=FALSE)
 STN.08.09<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.csv")
@@ -344,45 +348,36 @@ write.csv(MISR.AQS.met, "/Users/mf/Documents/MISR/Data/MISR.AQS.met.csv")
 
 
 # ICV data (monthly with odd start dates)
-# ICV<-read.sas7bdat("/Users/mf/Documents/AQS/STN/seasonal4wkdata_no2wk_aeavg_all.sas7bdat")
-#ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV Comparisons Working Group/icv2_seasonal_27jan15.sas7bdat")
 ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV2 Spatial Modeling/icv2spatial_01jun15.sas7bdat")
-#ICV<-ICV[,c(-33:-77,-87:-202)]
-#ICV$datestart<-as.character(as.Date(ICV$startdate, origin='1960-01-01'))
 ICV$datestart<-dates(ICV$startdate,origin=c(month=1,day=1,year=1960))
 ICV$datestart2<-mdy(ICV$datestart)
 ICV$dateend<-dates(ICV$enddate,origin=c(month=1,day=1,year=1960))
 ICV$dateend2<-mdy(ICV$dateend)
 
-date<-strsplit(ICV$datestart,"-")
-ICV$year.start<-as.numeric(sapply(date, "[[", 1) )
-ICV$month.start<-as.numeric(sapply(date, "[[", 2) )
-ICV$day.start<-as.numeric(sapply(date, "[[", 3) )
-ICV$month.start2<-ifelse(ICV$day.start>=15, ICV$month.start+1, ICV$month.start)
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 newcoords.icv<-project(as.matrix(cbind(ICV$lon, ICV$lat)), proj=proj.albers)
 ICV$x<-newcoords.icv[,1]
 ICV$y<-newcoords.icv[,2]
-#central site
-cs<-ICV[ICV$idtype=="CS",]
-# find unique startdates
+
+#write.csv(ICV,"/Users/mf/Documents/MISR/Data/ICV.csv")
+
+# find unique startdates and create interval to match MISR
 ICV.startdays<-ICV %>% distinct(datestart2)
 ICV.startdays$sampling.interval <- as.interval(ICV.startdays$datestart2, ICV.startdays$dateend2)
-
 
 MISR.ICV.match.all<-vector('list',length(ICV$date))
 
 for (i in 1:length(ICV.startdays$startdate)){
-  # take MISR averages between each ICV start and end date
+  # take MISR averages between each ICV start and end date (sampling.interval)
   misr.icv.date.match<-misr.08.09[misr.08.09$date2 %within% ICV.startdays$sampling.interval[i],]
   misr.monthly <- ddply(misr.icv.date.match, .(x,y), summarise, AOD.month=mean(AOD),
                             AODsmall.month=mean(AODsmall), AODmed.month=mean(AODmed), 
                             AODlarge.month=mean(AODlarge), AODnonsph.month=mean(AODnonspher))
-# merge with icv by startdate
- #misr.monthly$startdate2<-ICV.startdays$datestart2[i]
+  # select icv observations for ith startdate  
  icv.monthly<-ICV[ICV$datestart2 %in% ICV.startdays$datestart2[i],]
+ # remove missing locations
  icv.monthly<-icv.monthly[!is.na(icv.monthly$x),]
- # for ith startdate, calculate distance between misr pixels and ICV sites
+ # calculate distance between misr pixels and ICV sites
  dist<-rdist(cbind(misr.monthly$x,misr.monthly$y),cbind(icv.monthly$x,icv.monthly$y))
 
   MISR.ICV.match.list<-vector('list',length(dist[1,]))
@@ -396,6 +391,7 @@ for (i in 1:length(ICV.startdays$startdate)){
 }
 
 MISR.ICV <- do.call("rbind", MISR.ICV.match.all)
+
 write.csv(MISR.ICV,"/Users/mf/Documents/MISR/Data/MISR.ICV.csv",row.names=FALSE)  
 
 #check
