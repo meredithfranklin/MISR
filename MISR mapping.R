@@ -24,14 +24,14 @@ newcoordsCA<-project(CA, proj=proj.albers)
 
 
 # Plot of all locations and MISR grid
-#grid(nx = NULL, ny = nx, col = "lightgray", lty = "dotted",lwd = par("lwd"), equilogs = TRUE)
 misr.08.09<-misr.08.09[misr.08.09$land.water.mask==3,]
 MISR.grid<-unique(misr.08.09[,1:2])
 AQS.08.09.ss2<-AQS.08.09.ss[AQS.08.09.ss$SITE_LATITUDE>=33.599,]
 aqs.points<-unique(AQS.08.09.ss2[,15:16])
 STN.08.09.ss<-STN.08.09[STN.08.09$Latitude>=33.599,]
 STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
-stn.points<-unique(STN.08.09.ss[,19:20])
+stn.points<-unique(STN.08.09.ss[,c(11,19:20)])
+
 ICV.ss<-ICV[ICV$wave=="CD",]
 ICV.points<-unique(ICV[,111:112])
 met.08.09.ss<-met.08.09[met.08.09$lat>33.599,]
