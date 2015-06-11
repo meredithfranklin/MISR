@@ -19,12 +19,16 @@ library(proj4) # for map projections
 library(R.utils) # decompressing NCDC data
 library(gtools) # for running means
 
+
+#### Geographic projection for California applied to all lat/lon ####
+proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
+
 ###### MISR NetCDF ######
 # Create list of filenames in directory
 setwd("/Users/mf/Documents/MISR/Data")
 misr.files <- list.files("./",pattern="*_LM_4p4km*",full.names=FALSE)
 
-# Extract data: use RegBestEstimate for AOD, use RegLowestResid for fractions and SS albedo
+# Extract data from netcdf: use RegBestEstimate for AOD, use RegLowestResid for fractions and SS albedo
 misr.list<-vector('list',length(misr.files))
   for(i in 1:length(misr.files)) { 
     dat<-open.ncdf(misr.files[i])
@@ -58,11 +62,11 @@ misr.08.09$AODmed<-misr.08.09$AODmedfrac*misr.08.09$AOD
 misr.08.09$AODlarge<-misr.08.09$AODlargefrac*misr.08.09$AOD
 
 # Convert lat and lon into planar x and y (California projection)
-proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 newcoords.misr<-project(as.matrix(cbind(misr.08.09$lon, misr.08.09$lat)), proj=proj.albers)
 misr.08.09$x<-newcoords.misr[,1]
 misr.08.09$y<-newcoords.misr[,2]
 
+# Write (read) csv
 #write.csv(misr.08.09,"misr.08.09.csv",row.names=FALSE)
 misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
 
@@ -71,7 +75,7 @@ misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
 setwd("/Users/mf/Documents/AQS/PM25")
 aqs.files <- list.files("./",pattern="CA_PM25*",full.names=FALSE)
 
-# Extract data
+# Extract data for CA then subset
 aqs.list<-vector('list',length(aqs.files))
 for(i in 1:length(aqs.files)) { 
   dat<-read.csv(aqs.files[i],stringsAsFactors=FALSE)
@@ -94,24 +98,26 @@ for(i in 1:length(aqs.files)) {
 AQS.08.09 <- do.call("rbind", aqs.list) 
 
 # Convert lat and lon into planar x and y (California projection)
-proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 newcoords.aqs<-project(as.matrix(cbind(AQS.08.09$SITE_LONGITUDE, AQS.08.09$SITE_LATITUDE)), proj=proj.albers)
 AQS.08.09$x<-newcoords.aqs[,1]
 AQS.08.09$y<-newcoords.aqs[,2]
 
-# Subset AQS data around LA area
+# Subset AQS data around LA area for this study
 AQS.08.09.ss<-AQS.08.09[AQS.08.09$SITE_LONGITUDE>=-120 & AQS.08.09$SITE_LONGITUDE<= -117,]
 AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LATITUDE>=33.2 & AQS.08.09.ss$SITE_LATITUDE<=35,]
 AQS.08.09.ss<-AQS.08.09.ss[AQS.08.09.ss$SITE_LONGITUDE != -119.4869,] #Remove Catalina
 
-#write.csv(AQS.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv",row.names=FALSE)
-#write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv",row.names=FALSE)
-#AQS.08.09.ss<-read.csv("/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
 # Use only the POC=1 (FRM) monitors
 # Retain only FRM daily data (exclude hourly and STN PM25)
 AQS.08.09.ss2<-AQS.08.09.ss[AQS.08.09.ss$POC==1,]
 AQS.08.09.ss2<-AQS.08.09.ss2[AQS.08.09.ss2$AQS_PARAMETER_CODE==88101,]
 AQS.08.09.ss2$date2<- mdy(AQS.08.09.ss2$Date) #use lubridate function for date matching (ICV)
+
+# Write (read) .csv
+#write.csv(AQS.08.09.ss2,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.FRM.csv",row.names=FALSE)
+#write.csv(AQS.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv",row.names=FALSE)
+#write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv",row.names=FALSE)
+#AQS.08.09.ss<-read.csv("/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
 
 
 ##### Daily AQS PM25 data ######
@@ -338,7 +344,6 @@ for (i in 1:length(misr.days$date)){
       MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel close to AQS site
     } 
     #print(min(dist[,j]))
-    #print(cor(match$AOD,match$Daily.Mean.PM2.5.Concentration))
   }
   MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list) 
   
@@ -378,7 +383,7 @@ write.csv(MISR.AQS.met, "/Users/mf/Documents/MISR/Data/MISR.AQS.met.csv")
 # ICV data (monthly with odd start dates)
 ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV2 Spatial Modeling/icv2spatial_01jun15.sas7bdat")
 ICV<-ICV[,c(1:2,4:13,110:118)]
-ICV.long<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV2 Spatial Modeling/icv2temporal_05jun15.sas7bdat")
+ICV.long<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV2 Spatial Modeling/icv2temporal_09jun15.sas7bdat")
 ICV.long<-ICV.long[,c(1,6:12)]
 ICV.new<-merge(ICV,ICV.long,by=c("Space_ID","startdate"))
 ICV.new<-ICV.new[,c(1:13,18:21,26:27)]
