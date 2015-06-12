@@ -2,8 +2,7 @@
 # MISR 2008-2009 4.4km AOD and fractions 
 # AQS Daily http://www.epa.gov/airdata/ad_data_daily.html
 # Aeronet data http://aeronet.gsfc.nasa.gov/
-# ICV data (CHS study)
-# December 2014, February-June 2015
+# June 2015
 # Meredith Franklin
 ##############################################
 
