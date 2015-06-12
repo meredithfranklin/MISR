@@ -30,21 +30,21 @@ misr.files <- list.files("./",pattern="*_LM_4p4km*",full.names=FALSE)
 
 # Extract data from netcdf: use RegBestEstimate for AOD, use RegLowestResid for fractions and SS albedo
 misr.list<-vector('list',length(misr.files))
-  for(i in 1:length(misr.files)) { 
-    dat<-open.ncdf(misr.files[i])
-    lat<-get.var.ncdf(dat, "Latitude")
-    lon<-get.var.ncdf(dat, "Longitude")
-    julian<-get.var.ncdf(dat, "Julian")
-    AOD<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepth")
-    AODsmallfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Small")
-    AODmedfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Medium")
-    AODlargefrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Large")
-    AODnonspher<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Nonsphere")
-    SSAlbedo<-get.var.ncdf(dat,"RegLowestResidSpectralSSA")
-    land.water.mask<-get.var.ncdf(dat,"AlgTypeFlag")#land=3 water=1
-    AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmallfrac=AODsmallfrac,AODmedfrac=AODmedfrac,
-                        AODlargefrac=AODlargefrac,AODnonspher=AODnonspher,SSAlbedo=SSAlbedo,land.water.mask=land.water.mask)
-    misr.list[[i]]<-AOD.dat
+for(i in 1:length(misr.files)) { 
+  dat<-open.ncdf(misr.files[i])
+  lat<-get.var.ncdf(dat, "Latitude")
+  lon<-get.var.ncdf(dat, "Longitude")
+  julian<-get.var.ncdf(dat, "Julian")
+  AOD<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepth")
+  AODsmallfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Small")
+  AODmedfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Medium")
+  AODlargefrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Large")
+  AODnonspher<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Nonsphere")
+  SSAlbedo<-get.var.ncdf(dat,"RegLowestResidSpectralSSA")
+  land.water.mask<-get.var.ncdf(dat,"AlgTypeFlag")#land=3 water=1
+  AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmallfrac=AODsmallfrac,AODmedfrac=AODmedfrac,
+                      AODlargefrac=AODlargefrac,AODnonspher=AODnonspher,SSAlbedo=SSAlbedo,land.water.mask=land.water.mask)
+  misr.list[[i]]<-AOD.dat
 }
 misr.08.09<-do.call("rbind", misr.list)
 
@@ -70,7 +70,6 @@ misr.08.09$y<-newcoords.misr[,2]
 #write.csv(misr.08.09,"misr.08.09.csv",row.names=FALSE)
 misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
 
-
 ##### Daily AQS PM25 data ######
 setwd("/Users/mf/Documents/AQS/PM25")
 aqs.files <- list.files("./",pattern="CA_PM25*",full.names=FALSE)
@@ -79,13 +78,13 @@ aqs.files <- list.files("./",pattern="CA_PM25*",full.names=FALSE)
 aqs.list<-vector('list',length(aqs.files))
 for(i in 1:length(aqs.files)) { 
   dat<-read.csv(aqs.files[i],stringsAsFactors=FALSE)
-# separate m/d/y from Date
+  # separate m/d/y from Date
   date<-strsplit(dat$Date,"/")
   dat$month<-as.numeric(sapply(date, "[[", 1) )
   dat$day<-as.numeric(sapply(date,"[[",2))
   dat$year<-as.numeric(sapply(date,"[[",3))+2000
   dat<-dat[,c(-10:-13)]
-# reading national .txt files (no geographic reference)  
+  # reading national .txt files (no geographic reference)  
   #header<-read.table(aqs.files[i],sep="|",header=TRUE,row.names=NULL,
   #                   check.names=FALSE,nrows=2,skip=1,comment.char="")
   #colnames(dat)<-names(header)
@@ -162,7 +161,7 @@ for(i in 1:length(stn.files)) {
   dat$POC<-as.numeric(dat$POC)
   dat$Concentration<-as.numeric(dat$Concentration)
   dat<-dat[dat$StateCode==6 & dat$POC==5 & dat$Parameter>88000,] #Subset to CA and STN sites (remove POC 6)
-
+  
   # separate m/d/y from Date
   dat$date2<-parse_date_time(dat$Date,"ymd")
   #dat$year<-as.numeric(substr(dat$Date,1,4))
@@ -195,7 +194,7 @@ for(i in 1:length(stn.files)) {
   join3<-join(join2,SO4, by=c('CountyCode','SiteID','date2'))
   join4<-join(join3,PM25stn, by=c('CountyCode','SiteID','date2'))
   # reading national .txt files (no geographic reference)  
- 
+  
   stn.list[[i]]<-join4
 }
 
@@ -215,7 +214,6 @@ STN.08.09.all$y<-newcoords.stn[,2]
 
 STN.08.09.ss<-STN.08.09.all[STN.08.09.all$Latitude>=33.599,]
 STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
-
 
 #write.csv(STN.08.09.all,"STN.08.09.csv",row.names=FALSE)
 #STN.08.09<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.csv")
@@ -243,29 +241,29 @@ for (y in 2008:2009){
   for (s in 1:dim(y.la.list)[1]){
     filename<-paste(sprintf("%06d",y.la.list[s,1]),"-",sprintf("%05d",y.la.list[s,2]),"-",y,".gz",sep="")
     download.file(paste("ftp://ftp.ncdc.noaa.gov/pub/data/noaa/", y,"/",filename,sep=""), paste("/Users/mf/Documents/NCDC/SoCal Met/",filename,sep=""), method='wget') 
-    }
-
+  }
+  
   files.gz <- list.files("./SoCal Met",full.names=TRUE,pattern=".gz")
-      for(i in 1:length(files.gz)){
-       gunzip(files.gz[[i]],overwrite=TRUE)
-    }
-# Extract data from downloaded files
+  for(i in 1:length(files.gz)){
+    gunzip(files.gz[[i]],overwrite=TRUE)
+  }
+  # Extract data from downloaded files
   # Need to define column widths, see ftp://ftp.ncdc.noaa.gov/pub/data/noaa/ish-format-document.pdf
   column.widths <- c(4, 6, 5, 4, 2, 2, 2, 2, 1, 6, 7, 5, 5, 5, 4, 3, 1, 1, 4, 1, 5, 1, 1, 1, 6, 1, 1, 1, 5, 1, 5, 1, 5, 1)
-#stations <- as.data.frame(matrix(NA, length(files.gz),))
-#names(stations) <- c("USAFID", "WBAN", "YR", "LAT","LONG", "ELEV")
-
+  #stations <- as.data.frame(matrix(NA, length(files.gz),))
+  #names(stations) <- c("USAFID", "WBAN", "YR", "LAT","LONG", "ELEV")
+  
   met.files <- list.files("./SoCal Met",full.names=TRUE,include.dirs = FALSE, recursive=FALSE)
   met.list<-vector('list',length(met.files))
-    for (i in 1:length(met.files)) {
-      if (file.info(met.files[i])$size>0){
+  for (i in 1:length(met.files)) {
+    if (file.info(met.files[i])$size>0){
       met.data <- read.fwf(met.files[i], column.widths)
-  #data <- data[, c(2:8, 10:11, 13, 16, 19, 29,31, 33)]
+      #data <- data[, c(2:8, 10:11, 13, 16, 19, 29,31, 33)]
       names(met.data) <- c("ID","USAFID", "WBAN", "year", "month","day", "hour", "min","srcflag", "lat", "lon",
-                    "typecode","elev","callid","qcname","wind.dir", "wind.dir.qc","wind.type.code","wind.sp","wind.sp.qc",
-                        "ceiling.ht","ceiling.ht.qc","ceiling.ht.method","sky.cond","vis.dist","vis.dist.qc","vis.var","vis.var.qc",
-                            "temp","temp.qc", "dew.point","dew.point.qc","atm.press","atm.press.qc")
-  # change 9999 to missing
+                           "typecode","elev","callid","qcname","wind.dir", "wind.dir.qc","wind.type.code","wind.sp","wind.sp.qc",
+                           "ceiling.ht","ceiling.ht.qc","ceiling.ht.method","sky.cond","vis.dist","vis.dist.qc","vis.var","vis.var.qc",
+                           "temp","temp.qc", "dew.point","dew.point.qc","atm.press","atm.press.qc")
+      # change 9999 to missing
       met.data$wind.dir<-ifelse(met.data$wind.dir==999,NA,met.data$wind.dir)
       met.data$wind.sp<-ifelse(met.data$wind.sp==9999,NA,met.data$wind.sp)
       met.data$ceiling.ht<-ifelse(met.data$ceiling.ht==99999,NA,met.data$ceiling.ht)
@@ -273,27 +271,27 @@ for (y in 2008:2009){
       met.data$temp<-ifelse(met.data$temp==9999,NA,met.data$temp)
       met.data$dew.point<-ifelse(met.data$dew.point==9999,NA,met.data$dew.point)
       met.data$atm.press<-ifelse(met.data$atm.press==99999,NA,met.data$atm.press)
-  
-  # conversions and scaling factors
+      
+      # conversions and scaling factors
       met.data$lat <- met.data$lat/1000
       met.data$lon <- met.data$lon/1000
       met.data$wind.sp <- met.data$wind.sp/10
       met.data$temp <- met.data$temp/10
       met.data$dew.point <- met.data$dew.point/10
       met.data$atm.press<- met.data$atm.press/10
-  #drop some variables
+      #drop some variables
       met.data<-subset(met.data, select=-c(ID,srcflag,typecode,callid,qcname))
-  # take average of hours matching MISR overpass time
+      # take average of hours matching MISR overpass time
       met.data.misr.hrs<-met.data[met.data$hour %in% c(10,11,12),]
       met.data.misr.avg<- ddply(met.data.misr.hrs, .(month, day, year,lat,lon,USAFID,elev), summarise, temp=mean(temp,na.rm=TRUE),
-                            dew.point=mean(dew.point,rm=TRUE), ceiling.ht=mean(ceiling.ht,na.rm=TRUE), wind.dir=mean(wind.dir,na.rm=TRUE),
-                              wind.sp=mean(wind.sp,na.rm=TRUE), atm.press=mean(atm.press,na.rm=TRUE))
-
+                                dew.point=mean(dew.point,rm=TRUE), ceiling.ht=mean(ceiling.ht,na.rm=TRUE), wind.dir=mean(wind.dir,na.rm=TRUE),
+                                wind.sp=mean(wind.sp,na.rm=TRUE), atm.press=mean(atm.press,na.rm=TRUE))
+      
       met.list[[i]]<-met.data.misr.avg
     }
-  else{ print("Zero file")
+    else{ print("Zero file")
     }
-}
+  }
 }
 met.08.09 <- do.call("rbind", met.list) 
 # add projected coordinates
@@ -313,19 +311,14 @@ misr.days<-misr.08.09 %>% distinct(date2)
 MISR.AQS.match.all<-vector('list',length(misr.days$date))
 MISR.STN.match.all<-vector('list',length(misr.days$date))
 met.AQS.match.all<-vector('list',length(misr.days$date))
-                          
+
 for (i in 1:length(misr.days$date)){
   aqs.daily<-AQS.08.09.ss2[AQS.08.09.ss2$date2 %in% misr.days[i,]$date2,] 
-                            # AQS.08.09.ss2$month %in% misr.days[i,]$month &
-                            # AQS.08.09.ss2$year %in% misr.days[i,]$year,]
-  
+
   stn.daily<-STN.08.09.ss[STN.08.09.ss$date2 %in% misr.days[i,]$date2,] 
-                        # STN.08.09$month %in% misr.days[i,]$month &
-                        # STN.08.09$year %in% misr.days[i,]$year,]
   
   misr.daily<-misr.08.09[misr.08.09$date2 %in% misr.days[i,]$date2,] 
-                           # misr.08.09$month %in% misr.days[i,]$month &
-                           # misr.08.09$year %in% misr.days[i,]$year,]
+
   met.daily<-met.08.09[met.08.09$day %in% misr.days[i,]$day &
                          met.08.09$month %in% misr.days[i,]$month & 
                          met.08.09$year %in% misr.days[i,]$year,]
@@ -343,19 +336,17 @@ for (i in 1:length(misr.days$date)){
     if (min(dist[,j])<=5){
       MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel close to AQS site
     } 
-    #print(min(dist[,j]))
   }
   MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list) 
   
   # match now with closest met sites
   for (j in 1:length(dist[1,])){ 
     if (min(dist[,j])<=10){
-  met.AQS.match.list[[j]]<-data.frame(met.daily[which.min(dist.met[,j]),],aqs.daily[j,]) # match AQS with met
-  }
-    #print(min(dist[,j]))
+      met.AQS.match.list[[j]]<-data.frame(met.daily[which.min(dist.met[,j]),],aqs.daily[j,]) # match AQS with met
+    }
   }
   met.AQS.match.all[[i]] <- do.call("rbind", met.AQS.match.list)
-
+  
   MISR.STN.match.list<-vector('list',length(dist[1,]))
   for (j in 1:length(dist[1,])){ 
     if (min(dist[,j])<=5){
@@ -378,71 +369,3 @@ write.csv(MISR.STN,"/Users/mf/Documents/MISR/Data/MISR.STN.csv",row.names=FALSE)
 #merge
 MISR.AQS.met<-join(MISR.AQS, AQS.met, by=c('AQS_SITE_ID','month','day','year'))
 write.csv(MISR.AQS.met, "/Users/mf/Documents/MISR/Data/MISR.AQS.met.csv")
-
-
-# ICV data (monthly with odd start dates)
-ICV<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV2 Spatial Modeling/icv2spatial_01jun15.sas7bdat")
-ICV<-ICV[,c(1:2,4:13,110:118)]
-ICV.long<-read.sas7bdat("/Volumes/Projects/CHSICV/Temp/TempRima/ICV2 Spatial Modeling/icv2temporal_09jun15.sas7bdat")
-ICV.long<-ICV.long[,c(1,6:12)]
-ICV.new<-merge(ICV,ICV.long,by=c("Space_ID","startdate"))
-ICV.new<-ICV.new[,c(1:13,18:21,26:27)]
-ICV.new$datestart<-dates(ICV.new$startdate,origin=c(month=1,day=1,year=1960))
-ICV.new$datestart2<-mdy(ICV.new$datestart)
-ICV.new$dateend<-dates(ICV.new$enddate,origin=c(month=1,day=1,year=1960))
-ICV.new$dateend2<-mdy(ICV.new$dateend)
-
-proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
-newcoords.icv<-project(as.matrix(cbind(ICV.new$avg_lon, ICV.new$avg_lat)), proj=proj.albers)
-ICV.new$x<-newcoords.icv[,1]
-ICV.new$y<-newcoords.icv[,2]
-
-write.csv(ICV.new,"/Users/mf/Documents/MISR/Data/ICV_new.csv")
-
-# find unique startdates and create interval to match MISR
-ICV.startdays<-ICV.new %>% distinct(datestart2)
-ICV.startdays$sampling.interval <- as.interval(ICV.startdays$datestart2, ICV.startdays$dateend2)
-
-# MISR grid x,y to make 1km grid
-misr.08.09<-misr.08.09[misr.08.09$land.water.mask==3,]
-MISR.grid<-unique(misr.08.09[,19:20])
-
-MISR.ICV.match.all<-vector('list',length(ICV.new$startdate))
-
-for (i in 1:length(ICV.startdays$startdate)){
-  # take MISR averages between each ICV start and end date (sampling.interval)
-  misr.icv.date.match<-misr.08.09[misr.08.09$date2 %within% ICV.startdays$sampling.interval[i],]
-  misr.monthly <- ddply(misr.icv.date.match, .(x,y), summarise, AOD.month=mean(AOD),
-                            AODsmall.month=mean(AODsmall), AODmed.month=mean(AODmed), 
-                            AODlarge.month=mean(AODlarge), AODnonsph.month=mean(AODnonspher))
-  knots=dim(misr.icv.monthly)[1]/3
-  misr.monthly.gam<-gam(AOD.month~s(x,y,k=knots),data=misr.monthly,na.action='na.exclude')
-  misr.monthly.pred.smooth<-predict.gam(misr.monthly.gam,newdata = MISR.grid)
-  
-  # select icv observations for ith startdate  
- icv.monthly<-ICV.new[ICV.new$datestart2 %in% ICV.startdays$datestart2[i],]
- # remove missing locations
- icv.monthly<-icv.monthly[!is.na(icv.monthly$x),]
- # calculate distance between misr pixels and ICV sites
- dist<-rdist(cbind(misr.monthly$x,misr.monthly$y),cbind(icv.monthly$x,icv.monthly$y))
-
-  MISR.ICV.match.list<-vector('list',length(dist[1,]))
- 
- for (j in 1:length(dist[1,])){ 
-   if (min(dist[,j])<=3){
-     MISR.ICV.match.list[[j]]<-data.frame(misr.monthly[which.min(dist[,j]),],icv.monthly[j,]) # identifies misr pixel close to ICV site
-   } 
- }
-  MISR.ICV.match.all[[i]] <- do.call("rbind", MISR.ICV.match.list) 
-}
-
-MISR.ICV2 <- do.call("rbind", MISR.ICV.match.all)
-
-write.csv(MISR.ICV,"/Users/mf/Documents/MISR/Data/MISR.ICV.csv",row.names=FALSE)  
-
-#check
-MISR.ICV.ss <- na.omit(subset(MISR.ICV,select=c(AOD.month,PM25)))
-plot(PM25~AOD.month,data=MISR.ICV.ss)
-
-
-
