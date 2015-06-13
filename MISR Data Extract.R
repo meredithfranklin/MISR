@@ -120,7 +120,7 @@ AQS.08.09.ss2$date2<- mdy(AQS.08.09.ss2$Date) #use lubridate function for date m
 #AQS.08.09.ss<-read.csv("/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
 
 
-##### Daily AQS PM25 data ######
+##### Daily AQS PM10 data ######
 setwd("/Users/mf/Documents/AQS/PM10")
 aqs.files <- list.files("./",pattern="AQS*",full.names=FALSE)
 
@@ -133,8 +133,8 @@ for(i in 1:length(aqs.files)) {
   date<-strsplit(dat$Date,"/")
   dat$month<-as.numeric(sapply(date, "[[", 1) )
   dat$day<-as.numeric(sapply(date,"[[",2))
-  dat$year<-as.numeric(sapply(date,"[[",3))+2000
-  dat<-dat[,c(-10:-14)]
+  dat$year<-as.numeric(sapply(date,"[[",3))
+  #dat<-dat[,c(-10:-14)]
   # reading national .txt files (no geographic reference)  
   #header<-read.table(aqs.files[i],sep="|",header=TRUE,row.names=NULL,
   #                   check.names=FALSE,nrows=2,skip=1,comment.char="")
@@ -147,6 +147,17 @@ for(i in 1:length(aqs.files)) {
 
 AQS.PM10.08.09 <- do.call("rbind", aqs.list) 
 
+# Convert lat and lon into planar x and y (California projection)
+newcoords.aqs<-project(as.matrix(cbind(AQS.PM10.08.09$SITE_LONGITUDE, AQS.PM10.08.09$SITE_LATITUDE)), proj=proj.albers)
+AQS.PM10.08.09$x<-newcoords.aqs[,1]
+AQS.PM10.08.09$y<-newcoords.aqs[,2]
+
+AQS.PM10.08.09.ss<-AQS.PM10.08.09[AQS.PM10.08.09$POC==1,]
+AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$SITE_LONGITUDE>=-120 & AQS.PM10.08.09.ss$SITE_LONGITUDE<= -117,]
+AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$SITE_LATITUDE>=33.2 & AQS.PM10.08.09.ss$SITE_LATITUDE<=35,]
+AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$SITE_LONGITUDE != -119.4869,] #Remove Catalina
+AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[,c(-3,-5:-14)]
+write.csv(AQS.PM10.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.PM10.FRM.08.09.ss",row.names=FALSE)
 
 #### EPA STN data (1 in 3 or 1 in 6 days) #####
 # Parameter codes for species EC=88307 OC=88305, sulfate=88403, nitrate=88306, PM25=88502
@@ -217,8 +228,8 @@ STN.08.09.ss<-STN.08.09.all[STN.08.09.all$Latitude>=33.599,]
 STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
 
 
-#write.csv(STN.08.09.all,"STN.08.09.csv",row.names=FALSE)
-#STN.08.09<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.csv")
+#write.csv(STN.08.09.ss,"STN.08.09.ss.csv",row.names=FALSE)
+STN.08.09.ss<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.ss.csv")
 
 ##### Daily NCDC data #####
 # Station Information
@@ -311,51 +322,70 @@ met.08.09<-met.08.09[,-1]
 #misr.days<-misr.08.09 %>% distinct(round(julian,digits=0))
 misr.days<-misr.08.09 %>% distinct(date2)
 MISR.AQS.match.all<-vector('list',length(misr.days$date))
+MISR.AQSPM10.match.all<-vector('list',length(misr.days$date))
 MISR.STN.match.all<-vector('list',length(misr.days$date))
 met.AQS.match.all<-vector('list',length(misr.days$date))
-                          
+met.AQSPM10.match.all<-vector('list',length(misr.days$date))   
+
 for (i in 1:length(misr.days$date)){
   aqs.daily<-AQS.08.09.ss2[AQS.08.09.ss2$date2 %in% misr.days[i,]$date2,] 
-                            # AQS.08.09.ss2$month %in% misr.days[i,]$month &
-                            # AQS.08.09.ss2$year %in% misr.days[i,]$year,]
+  
+  aqsPM10.daily<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$date2 %in% misr.days[i,]$date2,] 
   
   stn.daily<-STN.08.09.ss[STN.08.09.ss$date2 %in% misr.days[i,]$date2,] 
-                        # STN.08.09$month %in% misr.days[i,]$month &
-                        # STN.08.09$year %in% misr.days[i,]$year,]
   
   misr.daily<-misr.08.09[misr.08.09$date2 %in% misr.days[i,]$date2,] 
-                           # misr.08.09$month %in% misr.days[i,]$month &
-                           # misr.08.09$year %in% misr.days[i,]$year,]
+                       
   met.daily<-met.08.09[met.08.09$day %in% misr.days[i,]$day &
                          met.08.09$month %in% misr.days[i,]$month & 
                          met.08.09$year %in% misr.days[i,]$year,]
+  
   #distance matrices for each dataset
   dist<-rdist(cbind(misr.daily$x,misr.daily$y),cbind(aqs.daily$x,aqs.daily$y))
+  dist.PM10<-rdist(cbind(misr.daily$x,misr.daily$y),cbind(aqsPM10.daily$x,aqsPM10.daily$y))
   dist.stn<-rdist(cbind(misr.daily$x,misr.daily$y),cbind(stn.daily$x,stn.daily$y))
   dist.met<-rdist(cbind(met.daily$x,met.daily$y),cbind(aqs.daily$x,aqs.daily$y))
+  dist.PM10met<-rdist(cbind(met.daily$x,met.daily$y),cbind(aqsPM10.daily$x,aqsPM10.daily$y))
   
   # take pixel which is smallest distance from AQS site (but within 5km)
   # identify row of distance matrix (misr pixel id), with smallest column is aqs site
   
   MISR.AQS.match.list<-vector('list',length(dist[1,]))
+  MISR.AQSPM10.match.list<-vector('list',length(dist[1,]))
   met.AQS.match.list<-vector('list',length(dist[1,]))
+  met.AQSPM10.match.list<-vector('list',length(dist[1,]))
+  
   for (j in 1:length(dist[1,])){ 
     if (min(dist[,j])<=5){
-      MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel close to AQS site
+      MISR.AQS.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],aqs.daily[j,]) # identifies misr pixel close to AQS PM25 site
     } 
-    #print(min(dist[,j]))
   }
+  
+  for (j in 1:length(dist[1,])){ 
+    if (min(dist.PM10[,j])<=5){
+      MISR.AQSPM10.match.list[[j]]<-data.frame(misr.daily[which.min(dist.PM10[,j]),],aqsPM10.daily[j,]) # identifies misr pixel close to AQS PM10 site
+    } 
+  }
+  
   MISR.AQS.match.all[[i]] <- do.call("rbind", MISR.AQS.match.list) 
+  MISR.AQSPM10.match.all[[i]] <- do.call("rbind", MISR.AQSPM10.match.list) 
   
   # match now with closest met sites
   for (j in 1:length(dist[1,])){ 
     if (min(dist[,j])<=10){
-  met.AQS.match.list[[j]]<-data.frame(met.daily[which.min(dist.met[,j]),],aqs.daily[j,]) # match AQS with met
+      met.AQS.match.list[[j]]<-data.frame(met.daily[which.min(dist.met[,j]),],aqs.daily[j,]) # match AQS PM25 with met
+    }
   }
-    #print(min(dist[,j]))
+  
+  for (j in 1:length(dist[1,])){ 
+    if (min(dist.PM10[,j])<=10){
+      met.AQSPM10.match.list[[j]]<-data.frame(met.daily[which.min(distPM10.met[,j]),],aqsPM10.daily[j,]) # match AQS PM10 with met
+    }
   }
+  
   met.AQS.match.all[[i]] <- do.call("rbind", met.AQS.match.list)
-
+  met.AQSPM10.match.all[[i]] <- do.call("rbind", met.AQSPM10.match.list)
+  
   MISR.STN.match.list<-vector('list',length(dist[1,]))
   for (j in 1:length(dist[1,])){ 
     if (min(dist[,j])<=5){

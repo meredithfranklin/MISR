@@ -9,6 +9,7 @@ setwd("/Users/mf/Documents/MISR/Reports")
 
 # Read processed data
 AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
+AQS.PM10.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.PM10.08.09.ss.csv")
 STN.08.09<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.csv")
 misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
 MISR.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
@@ -31,6 +32,7 @@ aqs.points<-unique(AQS.08.09.ss2[,15:16])
 STN.08.09.ss<-STN.08.09[STN.08.09$Latitude>=33.599,]
 STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
 stn.points<-unique(STN.08.09.ss[,c(11,19:20)])
+aqs.PM10.points<-unique(AQS.PM10.08.09[,13:14])
 
 ICV.ss<-ICV[ICV$wave=="CD",]
 ICV.points<-unique(ICV[,111:112])
@@ -38,10 +40,12 @@ met.08.09.ss<-met.08.09[met.08.09$lat>33.599,]
 met.points<-unique(met.08.09.ss[,5:6])
 
 png('MISRmap_locations.png')
-map <- GetMap(center=c(34.5,  -118.3), maptype='hybrid', zoom=8)
+map <- GetMap(center=c(34.5,  -118.3), maptype='hybrid', zoom=7)
 PlotOnStaticMap(map,MISR.grid$lat, MISR.grid$lon, cex=.5,pch=15,col="grey")
+PlotOnStaticMap(map,aqs.PM10.points$SITE_LATITUDE,aqs.PM10.points$SITE_LONGITUDE, cex=1,pch=19,col="cyan",add=TRUE)
 PlotOnStaticMap(map,ICV.points$lat,ICV.points$lon, cex=.3,pch=19,col="green",add=TRUE)
 PlotOnStaticMap(map,aqs.points$SITE_LATITUDE,aqs.points$SITE_LONGITUDE, cex=1,pch='+',col="cyan",add=TRUE)
+
 PlotOnStaticMap(map,stn.points$Latitude, stn.points$Longitude, cex=.8,pch=19,col="magenta",add=TRUE)
 PlotOnStaticMap(map,met.points$lat, met.points$lon, cex=.7,pch=15,col="orangered",bg="orange",add=TRUE)
 legend("bottomleft",legend=c("MISR","ICV","AQS","STN","Weather"),pch=c(19,19,3,8,15),col=c("grey","green","cyan","magenta","orangered"),

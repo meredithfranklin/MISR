@@ -12,7 +12,6 @@ library(chron) # for converting julian dates
 library(lubridate) # for date interval matching
 library(plyr) # for easy merging/subsetting
 library(dplyr) #for easy merging/subsetting
-library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
 library(proj4) # for map projections
 library(R.utils) # decompressing NCDC data
