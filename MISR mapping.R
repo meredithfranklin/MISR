@@ -32,7 +32,7 @@ aqs.points<-unique(AQS.08.09.ss2[,15:16])
 STN.08.09.ss<-STN.08.09[STN.08.09$Latitude>=33.599,]
 STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
 stn.points<-unique(STN.08.09.ss[,c(11,19:20)])
-aqs.PM10.points<-unique(AQS.PM10.08.09[,13:14])
+aqs.PM10.points<-unique(AQS.PM10.08.09.ss2[,19:20])
 
 ICV.ss<-ICV[ICV$wave=="CD",]
 ICV.points<-unique(ICV[,111:112])

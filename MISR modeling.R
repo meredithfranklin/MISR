@@ -6,9 +6,11 @@
 library(mgcv)
 library(ggplot2)
 setwd("/Users/mf/Documents/MISR/Reports")
-# Matched MISR-AQS data
+# Matched MISR-AQS datasets
 MISR.AQS<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
 MISR.AQS.met<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.met.csv")
+MISR.AQSPM10<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQSPM10.csv")
+MISR.AQSPM10.met<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQSPM10.met.csv")
 MISR.STN<-read.csv("/Users/mf/Documents/MISR/Data/MISR.STN.csv")
 MISR.ICV<-read.csv("/Users/mf/Documents/MISR/Data/MISR.ICV.csv")
 # MISR data
@@ -26,8 +28,10 @@ MISR.AQS.met.ss$julian2<-MISR.AQS.met.ss$julian/10000
 # MISR.AQS.met.ss$PMdiff<-MISR.AQS.met.ss$Daily.Mean.PM2.5.Concentration.x-MISR.AQS.met.ss$Daily.Mean.PM2.5.Concentration.y
 MISR.AQS.met.ss<-MISR.AQS.met.ss[MISR.AQS.met.ss$PMdiff==0,]
 
+MISR.AQSPM10$julian2<-MISR.AQSPM10$julian/10000
 
-# MISR AOD and AQS 
+
+# MISR AOD and AQS PM2.5
 # Univariate relationship between AOD and PM25
 cor(MISR.AQS.ss$AOD,MISR.AQS.ss$Daily.Mean.PM2.5.Concentration)
 lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS.ss)
@@ -85,6 +89,30 @@ pdf('MISR.AODlarge.PM25.pdf')
 p<-qplot(AODlarge,log(Daily.Mean.PM2.5.Concentration), data=MISR.AQS.ss,xlab="MISR AOD large",ylab="AQS PM2.5 (ug/m3)")
 p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 dev.off()
+
+# MISR AOD and AQS PM10
+# Univariate relationship between AOD and PM10
+MISR.AQSPM10.ss<-MISR.AQSPM10[MISR.AQSPM10$AOD<0.5,]
+
+misr.aqs.PM10.points<-unique(MISR.AQSPM10[,34:35])
+p<-qplot(AOD,Daily.Mean.PM10.Concentration, data=MISR.AQSPM10.ss,xlab="MISR AOD",ylab="AQS PM10 (ug/m3)")
+p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+
+p<-qplot(AODlarge,Daily.Mean.PM10.Concentration, data=MISR.AQSPM10,xlab="MISR AOD large",ylab="AQS PM10 (ug/m3)")
+p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+
+gam.MISR.AOD.large<-gam(Daily.Mean.PM10.Concentration~AODlarge, data=MISR.AQSPM10)
+gam.st.MISR.large<-gam(Daily.Mean.PM10.Concentration~AODlarge+s(julian2,k=5)+s(x.1,y.1,k=5), na.action=na.exclude,data=MISR.AQSPM10.ss)
+
+gam.MISR.AOD.large.met<-gam(Daily.Mean.PM10.Concentration~s(AODlarge), data=MISR.AQSPM10.met.ss)
+gam.st.MISR.large.met<-gam(Daily.Mean.PM10.Concentration~AODlarge+s(julian2,k=5)+s(x.1,y.1,k=5)+dew.point, na.action=na.exclude,data=MISR.AQSPM10.met)
+
+gam.MISR.AOD<-gam(Daily.Mean.PM10.Concentration~s(AOD), data=MISR.AQSPM10)
+gam.st.MISR<-gam(Daily.Mean.PM10.Concentration~AOD+s(julian2,k=5)+s(x.1,y.1,k=5), na.action=na.exclude,data=MISR.AQSPM10)
+
+gam.MISR.AOD.met<-gam(Daily.Mean.PM10.Concentration~s(AOD), data=MISR.AQSPM10.met)
+gam.st.MISR.met<-gam(Daily.Mean.PM10.Concentration~s(AOD)+s(julian2,k=5)+s(x.1,y.1,k=5)+wind.sp+atm.press, na.action=na.exclude,data=MISR.AQSPM10.met)
+
 
 # MISR AOD and STN
 # Remove AOD greater than 1

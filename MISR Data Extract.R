@@ -117,7 +117,7 @@ AQS.08.09.ss2$date2<- mdy(AQS.08.09.ss2$Date) #use lubridate function for date m
 #write.csv(AQS.08.09.ss2,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.FRM.csv",row.names=FALSE)
 #write.csv(AQS.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv",row.names=FALSE)
 #write.csv(AQS.08.09,"/Users/mf/Documents/MISR/Data/AQS.08.09.csv",row.names=FALSE)
-#AQS.08.09.ss<-read.csv("/Users/mf/Documents/MISR/Data/AQS.08.09.ss.csv")
+AQS.08.09.ss2<-read.csv("/Users/mf/Documents/MISR/Data/AQS.08.09.ss.FRM.csv")
 
 
 ##### Daily AQS PM10 data ######
@@ -129,7 +129,7 @@ aqs.list<-vector('list',length(aqs.files))
 for(i in 1:length(aqs.files)) { 
   dat<-read.csv(aqs.files[i],stringsAsFactors=FALSE)
   # separate m/d/y from Date
-  dat$date2<-parse_date_time(dat$Date,"mdy")
+  dat$date2<-mdy(dat$Date) 
   date<-strsplit(dat$Date,"/")
   dat$month<-as.numeric(sapply(date, "[[", 1) )
   dat$day<-as.numeric(sapply(date,"[[",2))
@@ -152,11 +152,11 @@ newcoords.aqs<-project(as.matrix(cbind(AQS.PM10.08.09$SITE_LONGITUDE, AQS.PM10.0
 AQS.PM10.08.09$x<-newcoords.aqs[,1]
 AQS.PM10.08.09$y<-newcoords.aqs[,2]
 
-AQS.PM10.08.09.ss<-AQS.PM10.08.09[AQS.PM10.08.09$POC==1,]
-AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$SITE_LONGITUDE>=-120 & AQS.PM10.08.09.ss$SITE_LONGITUDE<= -117,]
+AQS.PM10.08.09.ss<-AQS.PM10.08.09[AQS.PM10.08.09$SITE_LONGITUDE>=-120 & AQS.PM10.08.09$SITE_LONGITUDE<= -117,]
 AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$SITE_LATITUDE>=33.2 & AQS.PM10.08.09.ss$SITE_LATITUDE<=35,]
 AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$SITE_LONGITUDE != -119.4869,] #Remove Catalina
-AQS.PM10.08.09.ss<-AQS.PM10.08.09.ss[,c(-3,-5:-14)]
+AQS.PM10.08.09.ss2<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$POC %in% c(1,2,5),]
+AQS.PM10.08.09.ss2<-AQS.PM10.08.09.ss2[,c(-3,-5:-14)]
 write.csv(AQS.PM10.08.09.ss,"/Users/mf/Documents/MISR/Data/AQS.PM10.FRM.08.09.ss",row.names=FALSE)
 
 #### EPA STN data (1 in 3 or 1 in 6 days) #####
@@ -328,13 +328,21 @@ met.AQS.match.all<-vector('list',length(misr.days$date))
 met.AQSPM10.match.all<-vector('list',length(misr.days$date))   
 
 for (i in 1:length(misr.days$date)){
-  aqs.daily<-AQS.08.09.ss2[AQS.08.09.ss2$date2 %in% misr.days[i,]$date2,] 
+  aqs.daily<-AQS.08.09.ss2[AQS.08.09.ss2$day %in% misr.days[i,]$day &
+                             AQS.08.09.ss2$month %in% misr.days[i,]$month &
+                             AQS.08.09.ss2$year %in% misr.days[i,]$year ,] 
   
-  aqsPM10.daily<-AQS.PM10.08.09.ss[AQS.PM10.08.09.ss$date2 %in% misr.days[i,]$date2,] 
+  aqsPM10.daily<-AQS.PM10.08.09.ss2[AQS.PM10.08.09.ss2$day %in% misr.days[i,]$day & 
+                                      AQS.PM10.08.09.ss2$month %in% misr.days[i,]$month &
+                                      AQS.PM10.08.09.ss2$year %in% misr.days[i,]$year,] 
   
-  stn.daily<-STN.08.09.ss[STN.08.09.ss$date2 %in% misr.days[i,]$date2,] 
+  stn.daily<-STN.08.09.ss[STN.08.09.ss$day %in% misr.days[i,]$day &
+                            STN.08.09.ss$month %in% misr.days[i,]$month &
+                            STN.08.09.ss$year %in% misr.days[i,]$year,] 
   
-  misr.daily<-misr.08.09[misr.08.09$date2 %in% misr.days[i,]$date2,] 
+  misr.daily<-misr.08.09[misr.08.09$day %in% misr.days[i,]$day &
+                           misr.08.09$month %in% misr.days[i,]$month &
+                           misr.08.09$year %in% misr.days[i,]$year,] 
                        
   met.daily<-met.08.09[met.08.09$day %in% misr.days[i,]$day &
                          met.08.09$month %in% misr.days[i,]$month & 
@@ -361,7 +369,7 @@ for (i in 1:length(misr.days$date)){
     } 
   }
   
-  for (j in 1:length(dist[1,])){ 
+  for (j in 1:length(dist.PM10[1,])){ 
     if (min(dist.PM10[,j])<=5){
       MISR.AQSPM10.match.list[[j]]<-data.frame(misr.daily[which.min(dist.PM10[,j]),],aqsPM10.daily[j,]) # identifies misr pixel close to AQS PM10 site
     } 
@@ -372,35 +380,41 @@ for (i in 1:length(misr.days$date)){
   
   # match now with closest met sites
   for (j in 1:length(dist[1,])){ 
-    if (min(dist[,j])<=10){
+    if (min(dist.met[,j])<=25){
       met.AQS.match.list[[j]]<-data.frame(met.daily[which.min(dist.met[,j]),],aqs.daily[j,]) # match AQS PM25 with met
     }
   }
   
-  for (j in 1:length(dist[1,])){ 
-    if (min(dist.PM10[,j])<=10){
-      met.AQSPM10.match.list[[j]]<-data.frame(met.daily[which.min(distPM10.met[,j]),],aqsPM10.daily[j,]) # match AQS PM10 with met
+  for (j in 1:length(dist.PM10[1,])){ 
+    if (min(dist.PM10met[,j])<=25){
+      met.AQSPM10.match.list[[j]]<-data.frame(met.daily[which.min(dist.PM10met[,j]),],aqsPM10.daily[j,]) # match AQS PM10 with met
     }
   }
   
   met.AQS.match.all[[i]] <- do.call("rbind", met.AQS.match.list)
   met.AQSPM10.match.all[[i]] <- do.call("rbind", met.AQSPM10.match.list)
   
-  MISR.STN.match.list<-vector('list',length(dist[1,]))
-  for (j in 1:length(dist[1,])){ 
-    if (min(dist[,j])<=5){
-      MISR.STN.match.list[[j]]<-data.frame(misr.daily[which.min(dist[,j]),],stn.daily[j,]) # identifies misr pixel close to STN site
-    } 
-  }
-  MISR.STN.match.all[[i]] <- do.call("rbind", MISR.STN.match.list) 
+ # MISR.STN.match.list<-vector('list',length(dist[1,]))
+  #for (j in 1:length(dist.stn[1,])){ 
+   #if (min(dist.stn[,j])<=5){
+    # MISR.STN.match.list[[j]]<-data.frame(misr.daily[which.min(dist.stn[,j]),],stn.daily[j,]) # identifies misr pixel close to STN site
+    #} 
+  #}
+  #MISR.STN.match.all[[i]] <- do.call("rbind", MISR.STN.match.list) 
   
 }
 
 MISR.AQS <- do.call("rbind", MISR.AQS.match.all)
 write.csv(MISR.AQS,"/Users/mf/Documents/MISR/Data/MISR.AQS.csv",row.names=FALSE)
 
+MISR.AQSPM10 <- do.call("rbind", MISR.AQSPM10.match.all)
+write.csv(MISR.AQSPM10,"/Users/mf/Documents/MISR/Data/MISR.AQSPM10.csv",row.names=FALSE)
+
 AQS.met <- do.call("rbind", met.AQS.match.all)
 write.csv(AQS.met, "/Users/mf/Documents/MISR/Data/AQS.met.csv",row.names=FALSE)
+
+AQSPM10.met <- do.call("rbind", met.AQSPM10.match.all)
+write.csv(AQSPM10.met, "/Users/mf/Documents/MISR/Data/AQSPM10.met.csv",row.names=FALSE)
 
 MISR.STN <- do.call("rbind", MISR.STN.match.all)
 write.csv(MISR.STN,"/Users/mf/Documents/MISR/Data/MISR.STN.csv",row.names=FALSE)
@@ -408,6 +422,9 @@ write.csv(MISR.STN,"/Users/mf/Documents/MISR/Data/MISR.STN.csv",row.names=FALSE)
 #merge
 MISR.AQS.met<-join(MISR.AQS, AQS.met, by=c('AQS_SITE_ID','month','day','year'))
 write.csv(MISR.AQS.met, "/Users/mf/Documents/MISR/Data/MISR.AQS.met.csv")
+
+MISR.AQSPM10.met<-join(MISR.AQSPM10, AQSPM10.met, by=c('AQS_SITE_ID','month','day','year'))
+write.csv(MISR.AQSPM10.met, "/Users/mf/Documents/MISR/Data/MISR.AQSPM10.met.csv")
 
 
 # ICV data (monthly with odd start dates)
