@@ -7,20 +7,22 @@ library(mgcv)
 library(ggplot2)
 setwd("/Users/mf/Documents/MISR/Reports")
 # Matched MISR-AQS datasets
-MISR.AQS<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
-MISR.AQS.met<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.met.csv")
-MISR.AQSPM10<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQSPM10.csv")
-MISR.AQSPM10.met<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQSPM10.met.csv")
-MISR.STN<-read.csv("/Users/mf/Documents/MISR/Data/MISR.STN.csv")
-MISR.ICV<-read.csv("/Users/mf/Documents/MISR/Data/MISR.ICV.csv")
-# MISR data
-misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
+misr.aqspm25<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25.csv")
+misr.aqspm10<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10.csv")
+misr.stn<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn.csv")
+
+# Matched MISR-AQS-MET datasets
+misr.aqspm25.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25_met.csv")
+misr.aqspm10.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10_met.csv")
+misr.aqsstn.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn_met.csv")
+
 # Visualizations and regressions
 
 # Remove AOD greater than 1
-MISR.AQS.ss<-MISR.AQS[MISR.AQS$AOD<1,]
+misr.aqspm25.ss<-misr.aqspm25[misr.aqspm25$AOD<1,]
+misr.aqspm10.ss<-misr.aqspm10[misr.aqspm10$AOD<1,]
 # Create new Julian date for time indexing, divide by 10000
-MISR.AQS.ss$julian2<-MISR.AQS.ss$julian/10000
+misr.aqspm25.ss$julian2<-misr.aqspm25.ss$julian/10000
 
 MISR.AQS.met.ss<-MISR.AQS.met[MISR.AQS.met$AOD<1,]
 MISR.AQS.met.ss$julian2<-MISR.AQS.met.ss$julian/10000
@@ -204,31 +206,4 @@ gam.st.MISR.AODlarge.met3<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x,y)
 plot(MISR.AQS.met.ss$AOD,MISR.AQS.met.ss$ceiling.ht)
 plot(MISR.AQS.met.ss$Daily.Mean.PM2.5.Concentration,MISR.AQS.met.ss$temp)
 hist(met.08.09$ceiling.ht,breaks=50)
-
-
-# MISR-ICV models
-MISR.ICV.ss <- na.omit(subset(MISR.ICV,select=c(AOD.month,PM25,EC_PM25,OC_PM25)))
-
-p<-qplot(AOD.month,PM25/1000, data=MISR.ICV.ss,xlab="MISR AOD",ylab="ICV PM2.5 (ug/m3)")
-p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
-
-MISR.ICV2.ss <- na.omit(subset(MISR.ICV2,select=c(AOD.month,PM25,EC_PM25,OC_PM25)))
-plot(PM25/1000~AOD.month,data=MISR.ICV2.ss)
-p<-qplot(AOD.month,PM25/1000, data=MISR.ICV2.ss,xlab="MISR AOD",ylab="ICV PM2.5 (ug/m3)")
-p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
-
-p<-qplot(AOD.month,PM25/1000, data=MISR.ICV2.ss,xlab="MISR AOD",ylab="ICV PM2.5 (ug/m3)")
-p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
-
-plot(EC_PM25/1000~AOD.month,data=MISR.ICV2.ss)
-plot(OC_PM25/1000~AOD.month,data=MISR.ICV2.ss)
-
-MISR.ICV.ss <- na.omit(subset(MISR.ICV,select=c(AODsmall.month,UltraFine,EC_uf,OC_uf)))
-plot(UltraFine/1000~AODsmall.month,data=MISR.ICV.ss)
-MISR.ICV.ss <- na.omit(subset(MISR.ICV,select=c(AODsmall.month,UltraFine)))
-plot(UltraFine/1000~AODsmall.month,data=MISR.ICV.ss)
-
-MISR.ICV$towncode2<-as.factor(MISR.ICV$towncode)
-
-misr.icv.st.gam<-gamm4(PM25/1000~(AOD.month)+s(x,y,by=towncode2)+s(startdate),data=MISR.ICV,na.action="na.exclude")
 

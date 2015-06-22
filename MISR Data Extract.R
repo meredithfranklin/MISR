@@ -217,10 +217,12 @@ stn.08.09.all$y<-newcoords.stn[,2]
 
 stn.08.09.ss<-stn.08.09.all[stn.08.09.all$Latitude>=33.599,]
 stn.08.09.ss<-stn.08.09.ss[stn.08.09.ss$Latitude<=35,]
+# remove duplicate columns
+stn.08.09.ss<-stn.08.09.ss[,c(-9:-11,-13:-15,-17:-19,-21:-23)]
 
 # Write (read) .csv
 write.csv(stn.08.09.ss,"stn_08_09_ss.csv",row.names=FALSE)
-stn.08.09.ss<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.ss.csv")
+stn.08.09.ss<-read.csv("/Users/mf/Documents/AQS/STN/stn_08_09_ss.csv")
 
 ##### Daily NCDC data #####
 # Station Information

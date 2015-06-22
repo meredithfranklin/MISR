@@ -8,31 +8,22 @@ library(RColorBrewer)
 setwd("/Users/mf/Documents/MISR/Reports")
 
 # Read processed data
-AQS.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.08.09.ss.csv")
-AQS.PM10.08.09.ss<-read.csv("/Users/mf/Documents/AQS/PM25/AQS.PM10.08.09.ss.csv")
-STN.08.09<-read.csv("/Users/mf/Documents/AQS/STN/STN.08.09.csv")
-misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.csv")
-MISR.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr.08.09.monthly.csv")
-MISR.AQS<-read.csv("/Users/mf/Documents/MISR/Data/MISR.AQS.csv")
-met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met.08.09.csv")
-ICV<-read.csv("/Users/mf/Documents/MISR/Data/ICV.csv")
-
-proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
-# Project the map
-CA <- data.frame(map("state","california", plot=FALSE)[c("x","y")])
-#project the map coordinates
-newcoordsCA<-project(CA, proj=proj.albers)
-
+aqspm25.08.09.ss2<-read.csv("/Users/mf/Documents/AQS/PM25/aqspm25_08_09_ss_frm.csv")
+aqspm10.08.09.ss2<-read.csv("/Users/mf/Documents/AQS/PM25/aqspm10_08_09_ss.csv")
+stn.08.09.ss<-read.csv("/Users/mf/Documents/AQS/STN/stn_08_09_ss.csv")
+misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr_08_09.csv")
+misr.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr_08_09_monthly.csv")
+misr.aqspm25<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25.csv")
+misr.aqspm10<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10.csv")
+met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met_08_09.csv")
+icv<-read.csv("/Users/mf/Documents/MISR/Data/ICV.csv")
 
 # Plot of all locations and MISR grid
-misr.08.09<-misr.08.09[misr.08.09$land.water.mask==3,]
-MISR.grid<-unique(misr.08.09[,1:2])
-AQS.08.09.ss2<-AQS.08.09.ss[AQS.08.09.ss$SITE_LATITUDE>=33.599,]
-aqs.points<-unique(AQS.08.09.ss2[,15:16])
-STN.08.09.ss<-STN.08.09[STN.08.09$Latitude>=33.599,]
-STN.08.09.ss<-STN.08.09.ss[STN.08.09.ss$Latitude<=35,]
-stn.points<-unique(STN.08.09.ss[,c(11,19:20)])
-aqs.PM10.points<-unique(AQS.PM10.08.09.ss2[,19:20])
+misr.08.09.ss<-misr.08.09[misr.08.09$land.water.mask==3,]
+misr.grid<-unique(misr.08.09.ss[,1:2])
+aqspm25.points<-unique(aqspm25.08.09.ss2[,9:10])
+stn.points<-unique(stn.08.09.ss[,c(11,19:20)])
+aqs.pm10.points<-unique(aqspm10.08.09.ss2[,9:10])
 
 ICV.ss<-ICV[ICV$wave=="CD",]
 ICV.points<-unique(ICV[,111:112])
