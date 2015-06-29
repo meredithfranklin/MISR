@@ -22,24 +22,29 @@ icv<-read.csv("/Users/mf/Documents/MISR/Data/ICV.csv")
 misr.08.09.ss<-misr.08.09[misr.08.09$land.water.mask==3,]
 misr.grid<-unique(misr.08.09.ss[,1:2])
 aqspm25.points<-unique(aqspm25.08.09.ss2[,9:10])
-stn.points<-unique(stn.08.09.ss[,c(11,19:20)])
-aqs.pm10.points<-unique(aqspm10.08.09.ss2[,9:10])
+aqspm25.points<-aqspm25.points[aqspm25.points$SITE_LATITUDE>33.65,]
+stn.points<-unique(stn.08.09.ss[,c(20:21)])
+aqspm10.points<-unique(aqspm10.08.09.ss2[,9:10])
+aqspm10.points<-aqspm10.points[aqspm10.points$SITE_LATITUDE>33.65,]
+# matched MISR-AQS points
+aqspm25.matchpoints<-unique(misr.aqspm25.ss2[,29:30])
+aqspm10.matchpoints<-unique(misr.aqspm10.ss2[,29:30])
 
 ICV.ss<-ICV[ICV$wave=="CD",]
 ICV.points<-unique(ICV[,111:112])
-met.08.09.ss<-met.08.09[met.08.09$lat>33.599,]
-met.points<-unique(met.08.09.ss[,5:6])
+met.08.09.ss<-met.08.09[met.08.09$lat>33.65,]
+met.points<-unique(met.08.09.ss[,4:5])
 
 png('MISRmap_locations.png')
 map <- GetMap(center=c(34.5,  -118.3), maptype='hybrid', zoom=7)
-PlotOnStaticMap(map,MISR.grid$lat, MISR.grid$lon, cex=.5,pch=15,col="grey")
-PlotOnStaticMap(map,aqs.PM10.points$SITE_LATITUDE,aqs.PM10.points$SITE_LONGITUDE, cex=1,pch=19,col="cyan",add=TRUE)
-PlotOnStaticMap(map,ICV.points$lat,ICV.points$lon, cex=.3,pch=19,col="green",add=TRUE)
-PlotOnStaticMap(map,aqs.points$SITE_LATITUDE,aqs.points$SITE_LONGITUDE, cex=1,pch='+',col="cyan",add=TRUE)
-
+PlotOnStaticMap(map,misr.grid$lat, misr.grid$lon, cex=.5,pch=15,col="grey")
+PlotOnStaticMap(map,aqspm25.points$SITE_LATITUDE,aqspm25.points$SITE_LONGITUDE, cex=1,pch=19,col="cyan",add=TRUE)
+PlotOnStaticMap(map,aqspm10.points$SITE_LATITUDE,aqspm10.points$SITE_LONGITUDE, cex=0.7,pch=19,col="deeppink",add=TRUE)
+PlotOnStaticMap(map,met.points$lat, met.points$lon, cex=.7,pch=15,col="green",add=TRUE)
+PlotOnStaticMap(map,aqspm25.matchpoints$SITE_LATITUDE,aqspm25.matchpoints$SITE_LONGITUDE, cex=0.5,pch=19,col="green",add=TRUE)
+PlotOnStaticMap(map,aqspm10.matchpoints$SITE_LATITUDE,aqspm10.matchpoints$SITE_LONGITUDE, cex=1,pch='+',col="green",add=TRUE)
 PlotOnStaticMap(map,stn.points$Latitude, stn.points$Longitude, cex=.8,pch=19,col="magenta",add=TRUE)
-PlotOnStaticMap(map,met.points$lat, met.points$lon, cex=.7,pch=15,col="orangered",bg="orange",add=TRUE)
-legend("bottomleft",legend=c("MISR","ICV","AQS","STN","Weather"),pch=c(19,19,3,8,15),col=c("grey","green","cyan","magenta","orangered"),
+legend(locator(1),legend=c("MISR","AQS PM2.5","AQS PM10","Met"),pch=c(15,19,19,8),col=c("grey","cyan","deeppink","green"),
        box.col='white',bty='o',bg='white',cex=0.7,title="Legend")
 dev.off()
 

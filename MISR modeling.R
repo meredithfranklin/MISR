@@ -1,6 +1,6 @@
 ##############################################
 # MISR 2008-2009 4km data analysis
-# February, March 2015
+# February-June 2015
 # Meredith Franklin
 ##############################################
 library(mgcv)
@@ -14,107 +14,174 @@ misr.stn<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn.csv")
 # Matched MISR-AQS-MET datasets
 misr.aqspm25.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25_met.csv")
 misr.aqspm10.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10_met.csv")
-misr.aqsstn.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn_met.csv")
+misr.stn.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn_met.csv")
 
 # Visualizations and regressions
 
 # Remove AOD greater than 1
 misr.aqspm25.ss<-misr.aqspm25[misr.aqspm25$AOD<1,]
+misr.aqspm25.ss2<-misr.aqspm25.ss[misr.aqspm25.ss$AODlargefrac>0,]
 misr.aqspm10.ss<-misr.aqspm10[misr.aqspm10$AOD<1,]
+misr.aqspm10.ss2<-misr.aqspm10.ss[misr.aqspm10.ss$AODlargefrac>0,]
 # Create new Julian date for time indexing, divide by 10000
 misr.aqspm25.ss$julian2<-misr.aqspm25.ss$julian/10000
+misr.aqspm10.ss$julian2<-misr.aqspm10.ss$julian/10000
+misr.stn$julian2<-misr.stn$julian/10000
 
-MISR.AQS.met.ss<-MISR.AQS.met[MISR.AQS.met$AOD<1,]
-MISR.AQS.met.ss$julian2<-MISR.AQS.met.ss$julian/10000
-# Remove multiple observations in matched met-aqs-misr dataset
-# MISR.AQS.met.ss$PMdiff<-MISR.AQS.met.ss$Daily.Mean.PM2.5.Concentration.x-MISR.AQS.met.ss$Daily.Mean.PM2.5.Concentration.y
-MISR.AQS.met.ss<-MISR.AQS.met.ss[MISR.AQS.met.ss$PMdiff==0,]
+# Remove AOD greater than 1
+misr.aqspm25.met.ss<-misr.aqspm25.met[misr.aqspm25.met$AOD<1,]
+misr.aqspm25.met.ss2<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$AODlargefrac>0,]
+misr.aqspm10.met.ss<-misr.aqspm10.met[misr.aqspm10.met$AOD<1,]
+misr.aqspm10.met.ss2<-misr.aqspm10.met.ss[misr.aqspm10.met.ss$AODlargefrac>0,]
+# Create new Julian date for time indexing, divide by 10000
+misr.aqspm25.met.ss$julian2<-misr.aqspm25.met.ss$julian/10000
+misr.aqspm10.met.ss$julian2<-misr.aqspm10.met.ss$julian/10000
+misr.aqsstn.met$julian2<-misr.aqsstn.met$julian/10000
 
-MISR.AQSPM10$julian2<-MISR.AQSPM10$julian/10000
 
+#### MISR AOD and AQS PM2.5 ####
+# Summary statistics
+# Title (writes new file)
+cat("PM25 Summary Stats", file = "SummaryStatsPM25.txt")
+# add new lines
+cat("\n", file = "SummaryStatsPM25.txt", append = TRUE)
+# export anova test output
+cat("Median AOD\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(median(misr.aqspm25.ss$AOD), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("IQR AOD\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(IQR(misr.aqspm25.ss$AOD), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("Mean PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(mean(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("St Dev PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(sd(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("Cor AOD PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(cor(misr.aqspm25.ss$AOD,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("Cor AODlarge PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(cor(misr.aqspm25.ss2$AODlarge,misr.aqspm25.ss2$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("Cor AODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(cor(misr.aqspm25.ss$AODsmall,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("Cor AOD PM25 met\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(cor(misr.aqspm25.met.ss$AOD,misr.aqspm25.met.ss$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("Cor AODlarge PM25 met\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(cor(misr.aqspm25.met.ss$AODlarge,misr.aqspm25.met.ss$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("Cor AODsmall PM25 met\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(cor(misr.aqspm25.met.ss$AODsmall,misr.aqspm25.met.ss$Daily.Mean.PM2.5.Concentration), file = "SummaryStatsPM25.txt", append = TRUE)
 
-# MISR AOD and AQS PM2.5
-# Univariate relationship between AOD and PM25
-cor(MISR.AQS.ss$AOD,MISR.AQS.ss$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration~AOD, data=MISR.AQS.ss)
-gam.MISR.AOD<-gam(Daily.Mean.PM2.5.Concentration~s(AOD), data=MISR.AQS.ss)
+# Univariate Linear models
+cat("linear mod AOD PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~(misr.aqspm25.ss$AOD))), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("linear mod logAOD PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~log(misr.aqspm25.ss$AOD))), file = "SummaryStatsPM25.txt", append = TRUE)
 
-# Spatio-temporal regression on matched data
-gam.st.MISR.AOD2<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.ss)
-# Use s-t model to predict PM2.5 from full AOD
-misr.04.21.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==4 & misr.08.09$day==21,]
-misr.04.21.08$julian2<-misr.04.21.08$julian/10000
-misr.04.21.08<-misr.04.21.08[,-1]
-predicted.pm25.04.21.08<-predict.gam(gam.st.MISR.AOD2, newdata=misr.04.21.08)
-# merge with data
-misr.04.21.08$predPM25<-predicted.pm25.04.21.08
+cat("linear mod AODlarge PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm25.ss2$Daily.Mean.PM2.5.Concentration~(misr.aqspm25.ss2$AODlarge))), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("linear mod logAODlarge PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm25.ss2$Daily.Mean.PM2.5.Concentration~log(misr.aqspm25.ss2$AODlarge))), file = "SummaryStatsPM25.txt", append = TRUE)
 
-gam.st.MISR.AOD2log<-gam(log(Daily.Mean.PM2.5.Concentration)~s(AOD,k=10)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.ss)
-predicted.pm25.04.21.08<-predict.gam(gam.st.MISR.AOD2log, newdata=misr.04.21.08)
-# merge with data
-misr.04.21.08$predPM25log<-exp(predicted.pm25.04.21.08)
+cat("linear mod AODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~(misr.aqspm25.ss$AODsmall))), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("linear mod logAODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~log(misr.aqspm25.ss$AODsmall))), file = "SummaryStatsPM25.txt", append = TRUE)
 
+# Univariate GAM models
+cat("GAM mod AOD PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(gam(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~s(misr.aqspm25.ss$AOD))), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("GAM mod logAOD PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(gam(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~s(log(misr.aqspm25.ss$AOD)))), file = "SummaryStatsPM25.txt", append = TRUE)
+
+cat("GAM mod AODlarge PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODlarge), data=misr.aqspm25.ss2),na.action='na.exclude'), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("GAM mod logAODlarge PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(log(AODlarge)), data=misr.aqspm25.ss2),na.action='na.exclude'), file = "SummaryStatsPM25.txt", append = TRUE)
+
+cat("GAM mod AODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODsmall), data=misr.aqspm25.ss2)), file = "SummaryStatsPM25.txt", append = TRUE)
+cat("GAM mod logAODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(log(AODsmall)), data=misr.aqspm25.ss2)), file = "SummaryStatsPM25.txt", append = TRUE)
+
+#### MISR AOD and AQS PM10 ####
+# Summary statistics
+# Title (writes new file)
+cat("PM10 Summary Stats", file = "SummaryStatsPM10.txt")
+# add new lines
+cat("\n", file = "SummaryStatsPM10.txt", append = TRUE)
+# export anova test output
+cat("Median AOD\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(median(misr.aqspm10.ss$AOD), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("IQR AOD\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(IQR(misr.aqspm10.ss$AOD), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("Mean PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(mean(misr.aqspm10.ss$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("St Dev PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(sd(misr.aqspm10.ss$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("Cor AOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(cor(misr.aqspm10.ss$AOD,misr.aqspm10.ss$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("Cor AODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(cor(misr.aqspm10.ss2$AODlarge,misr.aqspm10.ss2$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("Cor AODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(cor(misr.aqspm10.ss$AODsmall,misr.aqspm10.ss$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("Cor AOD PM10 met\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(cor(misr.aqspm10.met.ss$AOD,misr.aqspm10.met.ss$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("Cor AODlarge PM10 met\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(cor(misr.aqspm10.met.ss$AODlarge,misr.aqspm10.met.ss$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("Cor AODsmall PM10 met\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(cor(misr.aqspm10.met.ss$AODsmall,misr.aqspm10.met.ss$Daily.Mean.PM10.Concentration), file = "SummaryStatsPM10.txt", append = TRUE)
+
+# Univariate Linear models
+cat("linear mod AOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~(misr.aqspm10.ss$AOD))), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("linear mod logAOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~log(misr.aqspm10.ss$AOD))), file = "SummaryStatsPM10.txt", append = TRUE)
+
+cat("linear mod AODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm10.ss2$Daily.Mean.PM10.Concentration~(misr.aqspm10.ss2$AODlarge))), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("linear mod logAODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm10.ss2$Daily.Mean.PM10.Concentration~log(misr.aqspm10.ss2$AODlarge))), file = "SummaryStatsPM10.txt", append = TRUE)
+
+cat("linear mod AODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~(misr.aqspm10.ss$AODsmall))), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("linear mod logAODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~log(misr.aqspm10.ss$AODsmall))), file = "SummaryStatsPM10.txt", append = TRUE)
+
+# Univariate GAM models
+cat("GAM mod AOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~s(misr.aqspm10.ss$AOD))), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("GAM mod logAOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~s(log(misr.aqspm10.ss$AOD)))), file = "SummaryStatsPM10.txt", append = TRUE)
+
+cat("GAM mod AODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge, k=4), data=misr.aqspm10.ss2),na.action='na.exclude'), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("GAM mod logAODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(log(AODlarge)), data=misr.aqspm10.ss2),na.action='na.exclude'), file = "SummaryStatsPM10.txt", append = TRUE)
+
+cat("GAM mod AODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODsmall), data=misr.aqspm10.ss2)), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("GAM mod logAODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(log(AODsmall)), data=misr.aqspm10.ss2)), file = "SummaryStatsPM10.txt", append = TRUE)
+
+# Plots
 png('MISR.AOD.PM25.png')
-p<-qplot(AOD,Daily.Mean.PM2.5.Concentration, data=MISR.AQS.ss,xlab="MISR AOD",ylab="AQS PM2.5 (ug/m3)")
+p<-qplot(AOD,Daily.Mean.PM2.5.Concentration, data=misr.aqspm25.ss,xlab="MISR AOD",ylab="AQS PM2.5 (ug/m3)")
 p+stat_smooth(method="gam",formula=y~s(x)) +stat_smooth(method='lm',formula=y~x,col='red')
 dev.off()
-
-# MISR AOD Small and AQS PM2.5
-plot(MISR.AQS$AODsmall2,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD small',ylab='AQS PM2.5')
-abline(lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS), col="red")
-cor(MISR.AQS$AODsmall,MISR.AQS$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD.small<-lm(Daily.Mean.PM2.5.Concentration~AODsmall, data=MISR.AQS)
-gam.MISR.AOD.small<-gam(Daily.Mean.PM2.5.Concentration~s(AODsmall), data=MISR.AQS.ss)
-gam.st.MISR.small<-gam(Daily.Mean.PM2.5.Concentration~s(AODsmall)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.ss)
-
-pdf('MISR.AODsmall.PM25.pdf')
-p<-qplot(AODsmall,log(Daily.Mean.PM2.5.Concentration), data=MISR.AQS.ss,xlab="MISR AOD small",ylab="AQS PM2.5 (ug/m3)")
+png('MISR.AOD.PM10.png')
+p<-qplot(AOD,Daily.Mean.PM10.Concentration, data=misr.aqspm10.ss2,xlab="MISR AOD",ylab="AQS PM10 (ug/m3)")
 p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 dev.off()
 
-# MISR AOD Medium and AQS PM2.5
-plot(MISR.AQS$AODmed,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
-abline(lm(Daily.Mean.PM2.5.Concentration~AODmed, data=MISR.AQS), col="red")
-cor(MISR.AQS$AODmed,MISR.AQS$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD.med<-lm(Daily.Mean.PM2.5.Concentration~AODmed, data=MISR.AQS)
+# Spatio-temporal regression on matched data
+gam.st.aod.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=misr.aqspm25.ss)
+gam.st.aodlarge.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=misr.aqspm25.ss2)
 
-# MISR AOD Large and AQS PM2.5
-plot(MISR.AQS$AODlarge,MISR.AQS$Daily.Mean.PM2.5.Concentration,xlab='MISR AOD',ylab='AQS PM2.5')
-abline(lm(Daily.Mean.PM2.5.Concentration~AODlarge, data=MISR.AQS), col="red")
-cor(MISR.AQS$AODlarge,MISR.AQS$Daily.Mean.PM2.5.Concentration)
-lm.MISR.AOD.large<-lm(Daily.Mean.PM2.5.Concentration~AODlarge, data=MISR.AQS)
+gam.st.aod.pm10<-gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2), na.action=na.exclude,data=misr.aqspm10.ss)
+gam.st.aodlarge.pm10<-gam(Daily.Mean.PM10.Concentration~AODlarge+s(x.1,y.1,k=12)+s(julian2), na.action=na.exclude,data=misr.aqspm10.ss2)
 
-gam.MISR.AOD.large<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge), data=MISR.AQS.ss)
-gam.st.MISR.large<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.ss)
+# Spatio-temporal regression on matched data adjustment for meteorology
+gam.st.aod.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss)
+gam.st.aodlarge.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss2)
 
-pdf('MISR.AODlarge.PM25.pdf')
-p<-qplot(AODlarge,log(Daily.Mean.PM2.5.Concentration), data=MISR.AQS.ss,xlab="MISR AOD large",ylab="AQS PM2.5 (ug/m3)")
-p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
-dev.off()
-
-# MISR AOD and AQS PM10
-# Univariate relationship between AOD and PM10
-MISR.AQSPM10.ss<-MISR.AQSPM10[MISR.AQSPM10$AOD<0.5,]
-
-misr.aqs.PM10.points<-unique(MISR.AQSPM10[,34:35])
-p<-qplot(AOD,Daily.Mean.PM10.Concentration, data=MISR.AQSPM10.ss,xlab="MISR AOD",ylab="AQS PM10 (ug/m3)")
-p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
-
-p<-qplot(AODlarge,Daily.Mean.PM10.Concentration, data=MISR.AQSPM10,xlab="MISR AOD large",ylab="AQS PM10 (ug/m3)")
-p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
-
-gam.MISR.AOD.large<-gam(Daily.Mean.PM10.Concentration~AODlarge, data=MISR.AQSPM10)
-gam.st.MISR.large<-gam(Daily.Mean.PM10.Concentration~AODlarge+s(julian2,k=5)+s(x.1,y.1,k=5), na.action=na.exclude,data=MISR.AQSPM10.ss)
-
-gam.MISR.AOD.large.met<-gam(Daily.Mean.PM10.Concentration~s(AODlarge), data=MISR.AQSPM10.met.ss)
-gam.st.MISR.large.met<-gam(Daily.Mean.PM10.Concentration~AODlarge+s(julian2,k=5)+s(x.1,y.1,k=5)+dew.point, na.action=na.exclude,data=MISR.AQSPM10.met)
-
-gam.MISR.AOD<-gam(Daily.Mean.PM10.Concentration~s(AOD), data=MISR.AQSPM10)
-gam.st.MISR<-gam(Daily.Mean.PM10.Concentration~AOD+s(julian2,k=5)+s(x.1,y.1,k=5), na.action=na.exclude,data=MISR.AQSPM10)
-
-gam.MISR.AOD.met<-gam(Daily.Mean.PM10.Concentration~s(AOD), data=MISR.AQSPM10.met)
-gam.st.MISR.met<-gam(Daily.Mean.PM10.Concentration~s(AOD)+s(julian2,k=5)+s(x.1,y.1,k=5)+wind.sp+atm.press, na.action=na.exclude,data=MISR.AQSPM10.met)
-
+gam.st.aod.pm10.met<-gam(Daily.Mean.PM10.Concentration~log(AOD)+s(x.1,y.1,k=11)+s(julian2)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)
+gam.st.aodlarge.pm10.met<-gam(Daily.Mean.PM10.Concentration~log(AODlarge)+s(x.1,y.1,k=11)+s(julian2)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss2)
 
 # MISR AOD and STN
 # Remove AOD greater than 1
@@ -144,6 +211,21 @@ ECmod<-gam(EC~s(AOD)+julian, data=MISR.STN.ss)
 SO4mod<-gam(SO2~s(AOD), data=MISR.STN.ss)
 NH4mod<-gam(NH4~s(AOD), data=MISR.STN.ss)
 # Cross validation
+
+
+# Use s-t model to predict PM2.5 from full AOD
+misr.04.21.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==4 & misr.08.09$day==21,]
+misr.04.21.08$julian2<-misr.04.21.08$julian/10000
+misr.04.21.08<-misr.04.21.08[,-1]
+predicted.pm25.04.21.08<-predict.gam(gam.st.MISR.AOD2, newdata=misr.04.21.08)
+# merge with data
+misr.04.21.08$predPM25<-predicted.pm25.04.21.08
+
+gam.st.MISR.AOD2log<-gam(log(Daily.Mean.PM2.5.Concentration)~s(AOD,k=10)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.ss)
+predicted.pm25.04.21.08<-predict.gam(gam.st.MISR.AOD2log, newdata=misr.04.21.08)
+# merge with data
+misr.04.21.08$predPM25log<-exp(predicted.pm25.04.21.08)
+
 
 
  # Cross Validation PM25
