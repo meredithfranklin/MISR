@@ -5,42 +5,47 @@
 ##############################################
 library(mgcv)
 library(ggplot2)
+library(gridExtra)
+
 setwd("/Users/mf/Documents/MISR/Reports")
 # Matched MISR-AQS datasets
 misr.aqspm25<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25.csv")
 misr.aqspm10<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10.csv")
-misr.stn<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn.csv")
+misr.stn<-read.csv("/Users/mf/Documents/MISR/Data/misr_stn.csv")
 
 # Matched MISR-AQS-MET datasets
 misr.aqspm25.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25_met.csv")
 misr.aqspm10.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10_met.csv")
 misr.stn.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn_met.csv")
 
-# Visualizations and regressions
+# Create new Julian date for time indexing, divide by 10000
+misr.aqspm25$julian2<-misr.aqspm25$julian/10000
+misr.aqspm10$julian2<-misr.aqspm10$julian/10000
+misr.stn$julian2<-misr.stn$julian/10000
 
-# Remove AOD greater than 1
+misr.aqspm25.met$julian2<-misr.aqspm25.met$julian/10000
+misr.aqspm10.met$julian2<-misr.aqspm10.met$julian/10000
+misr.stn.met$julian2<-misr.stn.met$julian/10000
+
+# Remove AOD greater than 1 and AODlarge = 0
 misr.aqspm25.ss<-misr.aqspm25[misr.aqspm25$AOD<1,]
 misr.aqspm25.ss2<-misr.aqspm25.ss[misr.aqspm25.ss$AODlargefrac>0,]
 misr.aqspm10.ss<-misr.aqspm10[misr.aqspm10$AOD<1,]
 misr.aqspm10.ss2<-misr.aqspm10.ss[misr.aqspm10.ss$AODlargefrac>0,]
-# Create new Julian date for time indexing, divide by 10000
-misr.aqspm25.ss$julian2<-misr.aqspm25.ss$julian/10000
-misr.aqspm10.ss$julian2<-misr.aqspm10.ss$julian/10000
-misr.stn$julian2<-misr.stn$julian/10000
 
-# Remove AOD greater than 1
 misr.aqspm25.met.ss<-misr.aqspm25.met[misr.aqspm25.met$AOD<1,]
 misr.aqspm25.met.ss2<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$AODlargefrac>0,]
 misr.aqspm10.met.ss<-misr.aqspm10.met[misr.aqspm10.met$AOD<1,]
 misr.aqspm10.met.ss2<-misr.aqspm10.met.ss[misr.aqspm10.met.ss$AODlargefrac>0,]
-# Create new Julian date for time indexing, divide by 10000
-misr.aqspm25.met.ss$julian2<-misr.aqspm25.met.ss$julian/10000
-misr.aqspm10.met.ss$julian2<-misr.aqspm10.met.ss$julian/10000
-misr.aqsstn.met$julian2<-misr.aqsstn.met$julian/10000
+
 
 
 #### MISR AOD and AQS PM2.5 ####
 # Summary statistics
+cor.test(misr.aqspm25.ss$AOD,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
+cor.test(misr.aqspm25.ss$AODsmall,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
+cor.test(misr.aqspm25.ss$AODlarge,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
+
 # Title (writes new file)
 cat("PM25 Summary Stats", file = "SummaryStatsPM25.txt")
 # add new lines
@@ -101,6 +106,10 @@ capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(log(AODsmall)), data
 
 #### MISR AOD and AQS PM10 ####
 # Summary statistics
+cor.test(misr.aqspm10.ss$AOD,misr.aqspm10.ss$Daily.Mean.PM10.Concentration)
+cor.test(misr.aqspm10.ss$AODsmall,misr.aqspm10.ss$Daily.Mean.PM10.Concentration)
+cor.test(misr.aqspm10.ss$AODlarge,misr.aqspm10.ss$Daily.Mean.PM10.Concentration)
+
 # Title (writes new file)
 cat("PM10 Summary Stats", file = "SummaryStatsPM10.txt")
 # add new lines
@@ -145,14 +154,10 @@ capture.output(summary(lm(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~log(misr
 
 # Univariate GAM models
 cat("GAM mod AOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
-capture.output(summary(gam(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~s(misr.aqspm10.ss$AOD))), file = "SummaryStatsPM10.txt", append = TRUE)
-cat("GAM mod logAOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
-capture.output(summary(gam(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~s(log(misr.aqspm10.ss$AOD)))), file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD), data=misr.aqspm10.ss)), file = "SummaryStatsPM10.txt", append = TRUE)
 
 cat("GAM mod AODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge, k=4), data=misr.aqspm10.ss2),na.action='na.exclude'), file = "SummaryStatsPM10.txt", append = TRUE)
-cat("GAM mod logAODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
-capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(log(AODlarge)), data=misr.aqspm10.ss2),na.action='na.exclude'), file = "SummaryStatsPM10.txt", append = TRUE)
 
 cat("GAM mod AODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODsmall), data=misr.aqspm10.ss2)), file = "SummaryStatsPM10.txt", append = TRUE)
@@ -169,50 +174,168 @@ p<-qplot(AOD,Daily.Mean.PM10.Concentration, data=misr.aqspm10.ss2,xlab="MISR AOD
 p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 dev.off()
 
-# Spatio-temporal regression on matched data
-gam.st.aod.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=misr.aqspm25.ss)
-gam.st.aodlarge.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=misr.aqspm25.ss2)
-
-gam.st.aod.pm10<-gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2), na.action=na.exclude,data=misr.aqspm10.ss)
-gam.st.aodlarge.pm10<-gam(Daily.Mean.PM10.Concentration~AODlarge+s(x.1,y.1,k=12)+s(julian2), na.action=na.exclude,data=misr.aqspm10.ss2)
-
-# Spatio-temporal regression on matched data adjustment for meteorology
-gam.st.aod.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss)
-gam.st.aodlarge.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss2)
-
-gam.st.aod.pm10.met<-gam(Daily.Mean.PM10.Concentration~log(AOD)+s(x.1,y.1,k=11)+s(julian2)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)
-gam.st.aodlarge.pm10.met<-gam(Daily.Mean.PM10.Concentration~log(AODlarge)+s(x.1,y.1,k=11)+s(julian2)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss2)
 
 # MISR AOD and STN
-# Remove AOD greater than 1
-MISR.STN.ss<-MISR.STN[MISR.STN$AOD<1,]
-# Create new Julian date for time indexing, divide by 10000
-MISR.STN.ss$julian2<-MISR.STN.ss$julian/10000
+# Title (writes new file)
+cat("PM Speciation Summary Stats", file = "SummaryStatsPMSpeciation.txt")
+# add new lines
+cat("\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+# export anova test output
+cat("Median AOD\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(median(misr.stn$AOD), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("IQR AOD\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(IQR(misr.stn$AOD), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("Mean STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(mean(misr.stn$PM25), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("St Dev STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(sd(misr.stn$PM25), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("Cor AOD STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(cor(misr.stn$AOD,misr.stn$PM25), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("Cor AODlarge STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(cor(misr.stn$AODlarge,misr.stn$PM25), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("Cor AODsmall STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(cor(misr.stn$AODsmall,misr.stn$PM25), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
 
-plot(MISR.STN.ss$AOD,MISR.STN.ss$OC,xlab='MISR AOD',ylab='STN OC')
-abline(lm(OC~AOD, data=MISR.STN.ss), col="red")
-
-plot(MISR.STN.ss$AOD,MISR.STN.ss$EC,xlab='MISR AOD',ylab='STN EC')
-abline(lm(EC~AOD, data=MISR.STN.ss), col="red")
-
-plot(MISR.STN.ss$AOD,MISR.STN.ss$SO2,xlab='MISR AOD',ylab='STN SO4')
-abline(lm(SO2~AOD, data=MISR.STN.ss), col="red")
-
-plot(MISR.STN.ss$AOD,MISR.STN.ss$NH4,xlab='MISR AOD',ylab='STN NH4')
-abline(lm(NH4~AOD, data=MISR.STN.ss), col="red")
-
-OC.mod<-gam(OC~AOD, data=MISR.STN.ss)
-SO4.mod<-gam(SO2~AOD, data=MISR.STN.ss)
-NH4.mod<-gam(NH4~AOD, data=MISR.STN.ss)
-
-# Regressions
-OCmod<-gam(OC~AOD+s(x,y,k=10), data=MISR.STN.ss)
-ECmod<-gam(EC~s(AOD)+julian, data=MISR.STN.ss)
-SO4mod<-gam(SO2~s(AOD), data=MISR.STN.ss)
-NH4mod<-gam(NH4~s(AOD), data=MISR.STN.ss)
-# Cross validation
+# Univariate Linear models with species
+cat("linear mod AOD STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$PM25~(misr.stn$AOD))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AOD STNEC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$EC~(misr.stn$AOD))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AOD STNOC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$OC~(misr.stn$AOD))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AOD STNSO4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$SO4~(misr.stn$AOD))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AOD STNNH4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$NH4~(misr.stn$AOD))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
 
 
+cat("linear mod AODlarge STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$PM25~(misr.stn$AODlarge))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODlarge STNEC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$EC~(misr.stn$AODlarge))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODlarge STNOC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$OC~(misr.stn$AODlarge))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODlarge STNSO4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$SO4~(misr.stn$AODlarge))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODlarge STNNH4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$NH4~(misr.stn$AODlarge))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+
+cat("linear mod AODsmall STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$PM25~(misr.stn$AODsmall))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODsmall STNEC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$EC~(misr.stn$AODsmall))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODsmall STNOC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$OC~(misr.stn$AODsmall))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODsmall STNSO4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$SO4~(misr.stn$AODsmall))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("linear mod AODsmall STNNH4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(lm(misr.stn$NH4~(misr.stn$AODsmall))), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+
+# Univariate GAM models
+cat("GAM mod AOD STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(PM25~s(AOD),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AOD STNEC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(EC~s(AOD),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AOD STNOC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(OC~s(AOD),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AOD STN5O4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(SO4~s(AOD),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AOD STNNH4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(NH4~s(AOD),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+
+cat("GAM mod AODlarge STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(PM25~s(AODlarge),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODlarge STNEC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(EC~s(AODlarge),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODlarge STNOC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(OC~s(AODlarge),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODlarge STN5O4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(SO4~s(AODlarge),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODlarge STNNH4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(NH4~s(AODlarge),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+
+cat("GAM mod AODsmall STNPM25\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(PM25~s(AODsmall,k=4),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODsmall STNEC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(EC~s(AODsmall),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODsmall STNOC\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(OC~s(AODsmall),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODsmall STN5O4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(SO4~s(AODsmall),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+cat("GAM mod AODsmall STNNH4\n", file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+capture.output(summary(gam(NH4~s(AODsmall),data=misr.stn)), file = "SummaryStatsPMSpeciation.txt", append = TRUE)
+
+
+# Plots
+p1<-qplot(AOD,PM25, data=misr.stn,xlab="MISR AOD",ylab="STN PM2.5 (ug/m3)")
+plot1<-p1+stat_smooth(method="gam",formula=y~s(x)) +stat_smooth(method='lm',formula=y~x,col='red')
+
+p2<-qplot(AOD,OC, data=misr.stn,xlab="MISR AOD",ylab="STN OC (ug/m3)")
+plot2<-p2+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+
+p3<-qplot(AOD,SO4, data=misr.stn,xlab="MISR AOD",ylab="STN SO4 (ug/m3)")
+plot3<-p3+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+
+p4<-qplot(AOD,NH4, data=misr.stn,xlab="MISR AOD",ylab="STN NH4 (ug/m3)")
+plot4<-p4+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+
+png('MISR.STN.png')
+grid.arrange(plot1,plot2,plot3,plot4,nrow=2,ncol=2)
+dev.off()
+
+#### Spatio-temporal regression with and without meteorology#####
+# PM2.5
+# Title (writes new file)
+cat("PM AOD Spatio-Temporal Models", file = "SpatioTemporalModels.txt")
+# add new lines
+cat("\n", file = "SpatioTemporalModels.txt", append = TRUE)
+# ST PM25-AOD
+cat("ST model PM25 AOD\n", file = "SpatioTemporalModels.txt", append = TRUE)
+cat("\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=misr.aqspm25.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM25 AOD\n version2", file = "SpatioTemporalModels.txt", append = TRUE)
+cat("\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=misr.aqspm25.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM25 AODlarge\n", file = "SpatioTemporalModels.txt", append = TRUE)
+cat("\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=misr.aqspm25.ss2)), file = "SpatioTemporalModels.txt", append = TRUE)
+#ST PM10-AOD
+cat("ST model PM10 AOD\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 AOD version 2\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2,k=4), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 AOD version 3\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2,k=3), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+
+cat("ST model PM10 AODlarge\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 AODlarge version 2 \n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2,k=4), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 AODlarge version 3 \n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2,k=3), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+
+
+# ST PM25-AOD with met
+cat("ST model PM25 AOD met\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM25 AODlarge met\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss2)), file = "SpatioTemporalModels.txt", append = TRUE)
+# ST PM10-AOD with met
+cat("ST model PM10 AOD met\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=11)+s(julian2,k=5)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 AODlarge met\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+s(julian2)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss2)), file = "SpatioTemporalModels.txt", append = TRUE)
+# ST PM10 linear AOD with met
+cat("ST model PM10 linear AOD met\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=11)+s(julian2)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 linear AODlarge met version 2\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+s(julian2,k=4)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 linear AODlarge met version 3\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+s(julian2,k=5)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 linear AODlarge met version 4\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+julian2+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+
+#### Cross-Validation ####
 # Use s-t model to predict PM2.5 from full AOD
 misr.04.21.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==4 & misr.08.09$day==21,]
 misr.04.21.08$julian2<-misr.04.21.08$julian/10000
