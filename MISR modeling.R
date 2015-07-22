@@ -39,7 +39,6 @@ misr.aqspm10.met.ss<-misr.aqspm10.met[misr.aqspm10.met$AOD<1,]
 misr.aqspm10.met.ss2<-misr.aqspm10.met.ss[misr.aqspm10.met.ss$AODlargefrac>0,]
 
 
-
 #### MISR AOD and AQS PM2.5 ####
 # Summary statistics
 cor.test(misr.aqspm25.ss$AOD,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
@@ -268,16 +267,20 @@ capture.output(summary(gam(NH4~s(AODsmall),data=misr.stn)), file = "SummaryStats
 
 # Plots
 p1<-qplot(AOD,PM25, data=misr.stn,xlab="MISR AOD",ylab="STN PM2.5 (ug/m3)")
-plot1<-p1+stat_smooth(method="gam",formula=y~s(x)) +stat_smooth(method='lm',formula=y~x,col='red')
+plot1<-p1 +stat_smooth(method='lm',formula=y~x,col='red')
+#plot1<-p1+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
 p2<-qplot(AOD,OC, data=misr.stn,xlab="MISR AOD",ylab="STN OC (ug/m3)")
-plot2<-p2+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+plot2<-p2 +stat_smooth(method='lm',formula=y~x,col='red')
+#plot2<-p2+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
 p3<-qplot(AOD,SO4, data=misr.stn,xlab="MISR AOD",ylab="STN SO4 (ug/m3)")
-plot3<-p3+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+plot3<-p3+stat_smooth(method='lm',formula=y~x,col='red')
+#plot3<-p3+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
 p4<-qplot(AOD,NH4, data=misr.stn,xlab="MISR AOD",ylab="STN NH4 (ug/m3)")
-plot4<-p4+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+plot4<-p4+stat_smooth(method='lm',formula=y~x,col='red')
+#plot4<-p4+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
 png('MISR.STN.png')
 grid.arrange(plot1,plot2,plot3,plot4,nrow=2,ncol=2)
@@ -350,37 +353,101 @@ predicted.pm25.04.21.08<-predict.gam(gam.st.MISR.AOD2log, newdata=misr.04.21.08)
 misr.04.21.08$predPM25log<-exp(predicted.pm25.04.21.08)
 
 
+ # Cross Validation 
 
- # Cross Validation PM25
-gam.pred.list<-vector('list',length(10))
-gam.cor.list<-vector('list',length(10))
-gam.resid.list<-vector('list',length(20))
-for (i in 1:20){
-  location.sample<-MISR.AQS.met.ss[sample(nrow(MISR.AQS.met.ss),1),]
-  #don't want to sample a background location
-  print(location.sample)
-  train<-MISR.AQS.met.ss[!(MISR.AQS.met.ss$x %in% location.sample$x
-                           & MISR.AQS.met.ss$y %in% location.sample$y), ]
-  test<-MISR.AQS.met.ss[(MISR.AQS.met.ss$x %in% location.sample$x
-                         & MISR.AQS.met.ss$y %in% location.sample$y), ]
-  #gam.st<-gam(Daily.Mean.PM2.5.Concentration~s(x,y)+s(AOD,k=6)+s(julian2),method='REML',data=train)
-  gam.st<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x,y)+s(julian2)+dew.point, na.action=na.exclude,data=train)
-  #print(summary(gam.st))
-  gam.st.pred<-predict.gam(gam.st,newdata=test)
-  gam.st.pred.merge<-cbind(gam.st.pred,test)
-  gam.st.resid<-data.frame(resid=gam.st$residuals, y=gam.st$y,fitted=gam.st$fitted.values)
-  RMSE<-sqrt(sum((gam.st.resid$fitted-gam.st.resid$y)^2)/dim(gam.st.resid)[1])
-  #print(RMSE)
-  #print(mse(gam.st.pred.merge$PM25, gam.st.pred.merge$gam.st.pred))
-  gam.cor.list[[i]]<-cor(gam.st.pred.merge$Daily.Mean.PM2.5.Concentration, gam.st.pred.merge$gam.st.pred)
-  gam.pred.list[[i]]<-gam.st.pred.merge
-  gam.resid.list[[i]]<-gam.st.resid
-  #print(summary(gam.st)$r.sq)
+misr.aqspm25.points<-unique(misr.aqspm25.met.ss[,35:36])
+misr.aqspm10.points<-unique(misr.aqspm10.met.ss[,36:37])
+
+gam.pred.pm25.list<-vector('list',length(misr.aqspm25.points))
+gam.resid.pm25.list<-vector('list',length(misr.aqspm25.points))
+gam.pred.pm25.met.list<-vector('list',length(misr.aqspm25.points))
+gam.resid.pm25.met.list<-vector('list',length(misr.aqspm25.points))
+
+gam.pred.pm25.list2<-vector('list',length(misr.aqspm25.points))
+gam.resid.pm25.list2<-vector('list',length(misr.aqspm25.points))
+gam.pred.pm25.met.list2<-vector('list',length(misr.aqspm25.points))
+gam.resid.pm25.met.list2<-vector('list',length(misr.aqspm25.points))
+
+for (i in 1:dim(misr.aqspm25.points)[1]){
+  location.sample1<-misr.aqspm25.points[i,]
+
+  train1<-misr.aqspm25.met.ss[!(misr.aqspm25.met.ss$x.1 %in% location.sample1$x.1
+                           & misr.aqspm25.met.ss$y.1 %in% location.sample1$y.1), ]
+  test1<-misr.aqspm25.met.ss[(misr.aqspm25.met.ss$x.1 %in% location.sample1$x.1
+                         & misr.aqspm25.met.ss$y.1 %in% location.sample1$y.1), ]
+
+  gam.st.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=train1)
+  gam.st.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=train1)
+  
+  gam.st2.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2), na.action=na.exclude,data=train1)
+  gam.st2.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=train1)
+  
+  gam.st.pred.pm25<-predict.gam(gam.st.pm25,newdata=test1)
+  gam.st.pred.pm25.merge<-cbind(gam.st.pred.pm25,test1)
+  gam.st.resid.pm25<-data.frame(resid=gam.st.pm25$residuals, y=gam.st.pm25$y,fitted=gam.st.pm25$fitted.values)
+
+  gam.st.pred.pm25.met<-predict.gam(gam.st.pm25.met,newdata=test1)
+  gam.st.pred.pm25.met.merge<-cbind(gam.st.pred.pm25.met,test1)
+  gam.st.resid.pm25.met<-data.frame(resid=gam.st.pm25.met$residuals, y=gam.st.pm25.met$y,fitted=gam.st.pm25.met$fitted.values)
+  
+  gam.st2.pred.pm25<-predict.gam(gam.st2.pm25,newdata=test1)
+  gam.st2.pred.pm25.merge<-cbind(gam.st2.pred.pm25,test1)
+  gam.st2.resid.pm25<-data.frame(resid=gam.st2.pm25$residuals, y=gam.st2.pm25$y,fitted=gam.st2.pm25$fitted.values)
+  
+  gam.st2.pred.pm25.met<-predict.gam(gam.st2.pm25.met,newdata=test1)
+  gam.st2.pred.pm25.met.merge<-cbind(gam.st2.pred.pm25.met,test1)
+  gam.st2.resid.pm25.met<-data.frame(resid=gam.st2.pm25.met$residuals, y=gam.st2.pm25.met$y,fitted=gam.st2.pm25.met$fitted.values)
+  
+  gam.pred.pm25.list[[i]]<-gam.st.pred.pm25.merge
+  gam.pred.pm25.met.list[[i]]<-gam.st.pred.pm25.met.merge
+  gam.resid.pm25.list[[i]]<-gam.st.resid.pm25
+  gam.resid.pm25.met.list[[i]]<-gam.st.resid.pm25.met
+  
+  gam.pred.pm25.list2[[i]]<-gam.st2.pred.pm25.merge
+  gam.pred.pm25.met.list2[[i]]<-gam.st2.pred.pm25.met.merge
+  gam.resid.pm25.list2[[i]]<-gam.st2.resid.pm25
+  gam.resid.pm25.met.list2[[i]]<-gam.st2.resid.pm25.met
+
 }
-unlist(gam.cor.list)
-#RMSE for the model 
-RMSE<-sqrt(sum((gam.resid.list[[3]]$fitted.values-gam.resid.list[[3]]$y)^2)/dim(gam.resid.list[[3]])[1])
 
+gam.pred.pm25 <- do.call("rbind", gam.pred.pm25.list) 
+gam.pred.pm25.met <- do.call("rbind", gam.pred.pm25.met.list) 
+gam.pred2.pm25 <- do.call("rbind", gam.pred.pm25.list2) 
+gam.pred2.pm25.met <- do.call("rbind", gam.pred.pm25.met.list2) 
+
+obs.pred.AOD<-lm(Daily.Mean.PM2.5.Concentration~gam.st.pred.pm25, data=gam.pred.pm25)
+obs.pred.AODmet<-lm(Daily.Mean.PM2.5.Concentration~gam.st.pred.pm25.met, data=gam.pred.pm25.met)
+
+obs.pred.AODlarge<-lm(Daily.Mean.PM2.5.Concentration~gam.st2.pred.pm25, data=gam.pred2.pm25)
+obs.pred.AODlargemet<-lm(Daily.Mean.PM2.5.Concentration~gam.st2.pred.pm25.met, data=gam.pred2.pm25.met)
+
+cor.test(gam.pred.pm25$gam.st.pred.pm25,gam.pred.pm25$Daily.Mean.PM2.5.Concentration)
+
+p5<-qplot(gam.st.pred.pm25,Daily.Mean.PM2.5.Concentration, data=gam.pred.pm25,xlab="Predicted",ylab="Observed")#,xlim=c(0,25)
+plot5<-p5+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
+
+p6<-qplot(gam.st.pred.pm25.met,Daily.Mean.PM2.5.Concentration, data=gam.pred.pm25.met,xlab="Predicted",ylab="Observed")#,xlim=c(0,25)
+plot6<-p6+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
+
+
+p7<-qplot(gam.st2.pred.pm25,Daily.Mean.PM2.5.Concentration, data=gam.pred2.pm25,xlab="Predicted",ylab="Observed",xlim=c(0,30))#,xlim=c(0,25)
+plot7<-p7+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
+
+p8<-qplot(gam.st2.pred.pm25.met,Daily.Mean.PM2.5.Concentration, data=gam.pred2.pm25.met,xlab="Predicted",ylab="Observed")#,xlim=c(0,25)
+plot8<-p8+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
+
+tiff('MISR.PM25.CV.tiff')
+grid.arrange(plot5,plot6,plot7,plot8,nrow=2,ncol=2)
+dev.off()
+
+# Cross validation PM10
+for (i in 1:length(misr.aqspm10.points)){
+  location.sample2<-misr.aqspm10.points[i,]
+train2<-misr.aqspm10.met.ss[!(misr.aqspm10.met.ss$x.1 %in% location.sample2$x.1
+                              & misr.aqspm10.met.ss$y.1 %in% location.sample2$y.1), ]
+test2<-misr.aqspm10.met.ss[(misr.aqspm10.met.ss$x.1 %in% location.sample2$x.1
+                            & misr.aqspm10.met.ss$y.1 %in% location.sample2$y.1), ]
+}
 i=1
 View(gam.pred.list[[i]])
 plot(gam.pred.list[[i]]$julian2,gam.pred.list[[i]]$Daily.Mean.PM2.5.Concentration,
