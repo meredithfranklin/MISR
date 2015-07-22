@@ -415,6 +415,7 @@ gam.pred.pm25.met <- do.call("rbind", gam.pred.pm25.met.list)
 gam.pred2.pm25 <- do.call("rbind", gam.pred.pm25.list2) 
 gam.pred2.pm25.met <- do.call("rbind", gam.pred.pm25.met.list2) 
 
+
 obs.pred.AOD<-lm(Daily.Mean.PM2.5.Concentration~gam.st.pred.pm25, data=gam.pred.pm25)
 obs.pred.AODmet<-lm(Daily.Mean.PM2.5.Concentration~gam.st.pred.pm25.met, data=gam.pred.pm25.met)
 
@@ -423,59 +424,84 @@ obs.pred.AODlargemet<-lm(Daily.Mean.PM2.5.Concentration~gam.st2.pred.pm25.met, d
 
 cor.test(gam.pred.pm25$gam.st.pred.pm25,gam.pred.pm25$Daily.Mean.PM2.5.Concentration)
 
-p5<-qplot(gam.st.pred.pm25,Daily.Mean.PM2.5.Concentration, data=gam.pred.pm25,xlab="Predicted",ylab="Observed")#,xlim=c(0,25)
+p5<-qplot(gam.st.pred.pm25,Daily.Mean.PM2.5.Concentration, data=gam.pred.pm25,xlab="Predicted",ylab="Observed")
 plot5<-p5+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
 
-p6<-qplot(gam.st.pred.pm25.met,Daily.Mean.PM2.5.Concentration, data=gam.pred.pm25.met,xlab="Predicted",ylab="Observed")#,xlim=c(0,25)
+p6<-qplot(gam.st.pred.pm25.met,Daily.Mean.PM2.5.Concentration, data=gam.pred.pm25.met,xlab="Predicted",ylab="Observed")
 plot6<-p6+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
 
 
-p7<-qplot(gam.st2.pred.pm25,Daily.Mean.PM2.5.Concentration, data=gam.pred2.pm25,xlab="Predicted",ylab="Observed",xlim=c(0,30))#,xlim=c(0,25)
+p7<-qplot(gam.st2.pred.pm25,Daily.Mean.PM2.5.Concentration, data=gam.pred2.pm25,xlab="Predicted",ylab="Observed",xlim=c(0,30))
 plot7<-p7+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
 
-p8<-qplot(gam.st2.pred.pm25.met,Daily.Mean.PM2.5.Concentration, data=gam.pred2.pm25.met,xlab="Predicted",ylab="Observed")#,xlim=c(0,25)
+p8<-qplot(gam.st2.pred.pm25.met,Daily.Mean.PM2.5.Concentration, data=gam.pred2.pm25.met,xlab="Predicted",ylab="Observed")
 plot8<-p8+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
 
 tiff('MISR.PM25.CV.tiff')
 grid.arrange(plot5,plot6,plot7,plot8,nrow=2,ncol=2)
 dev.off()
 
-# Cross validation PM10
-for (i in 1:length(misr.aqspm10.points)){
-  location.sample2<-misr.aqspm10.points[i,]
-train2<-misr.aqspm10.met.ss[!(misr.aqspm10.met.ss$x.1 %in% location.sample2$x.1
-                              & misr.aqspm10.met.ss$y.1 %in% location.sample2$y.1), ]
-test2<-misr.aqspm10.met.ss[(misr.aqspm10.met.ss$x.1 %in% location.sample2$x.1
-                            & misr.aqspm10.met.ss$y.1 %in% location.sample2$y.1), ]
-}
-i=1
-View(gam.pred.list[[i]])
-plot(gam.pred.list[[i]]$julian2,gam.pred.list[[i]]$Daily.Mean.PM2.5.Concentration,
+View(gam.pred.pm25.list[[i]])
+plot(gam.pred.pm25.list[[i]]$julian2,gam.pred.pm25.list[[i]]$Daily.Mean.PM2.5.Concentration,
      xlab="Time",main="PM2.5 observed (black) and predicted (red)",ylab="PM2.5,ug/m3",
      pch=19,cex=0.5)
-points(gam.pred.list[[i]]$julian2,gam.pred.list[[i]]$gam.st.pred,col="red",pch=19,cex=0.5)
-lines(gam.pred.list[[i]]$julian2,gam.pred.list[[i]]$gam.st.pred,col="red")
-lines(gam.pred.list[[i]]$julian2,gam.pred.list[[i]]$Daily.Mean.PM2.5.Concentration,col="black")
-
-# Spatio-temporal regression on matched data with meteorology
-lm.MISR.AOD<-lm(Daily.Mean.PM2.5.Concentration.x~AOD, data=MISR.AQS.met.ss)
-gam.st.MISR.AOD1<-gam(Daily.Mean.PM2.5.Concentration.x~s(AOD),na.action=na.exclude,data=MISR.AQS.met.ss)
-gam.st.MISR.AOD.met<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.met.ss)
-gam.st.MISR.AOD.met2<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x,y)+s(julian2)+dew.point, na.action=na.exclude,data=MISR.AQS.met.ss)
-# best met model includes dew point and wind dir
-gam.st.MISR.AOD.met3<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x,y)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=MISR.AQS.met.ss)
+points(gam.pred.pm25.list[[i]]$julian2,gam.pred.pm25.list[[i]]$gam.st.pred.pm25,col="red",pch=19,cex=0.5)
+lines(gam.pred.pm25.list[[i]]$julian2,gam.pred.pm25.list[[i]]$gam.st.pred.pm25,col="red")
+lines(gam.pred.pm25.list[[i]]$julian2,gam.pred.pm25.list[[i]]$Daily.Mean.PM2.5.Concentration,col="black")
 
 
-gam.st.MISR.AOD.met4<-gam(AOD~dew.point+atm.press+ceiling.ht+s(julian2), na.action=na.exclude,data=MISR.AQS.met.ss)
-met.subset<-MISR.AQS.met.ss[,47:52]
-cor(met.subset, use='complete')
+# Cross validation PM10
+gam.pred.pm10.list<-vector('list',length(misr.aqspm10.points))
+gam.resid.pm10.list<-vector('list',length(misr.aqspm10.points))
+gam.pred.pm10.met.list<-vector('list',length(misr.aqspm10.points))
+gam.resid.pm10.met.list<-vector('list',length(misr.aqspm10.points))
+
+gam.pred.pm10.list2<-vector('list',length(misr.aqspm10.points))
+gam.resid.pm10.list2<-vector('list',length(misr.aqspm10.points))
+gam.pred.pm10.met.list2<-vector('list',length(misr.aqspm10.points))
+gam.resid.pm10.met.list2<-vector('list',length(misr.aqspm10.points))
+
+for (i in 1:length(misr.aqspm10.points)){
+  location.sample2<-misr.aqspm10.points[i,]
+
+  train2<-misr.aqspm10.met.ss[!(misr.aqspm10.met.ss$x.1 %in% location.sample2$x.1
+                              & misr.aqspm10.met.ss$y.1 %in% location.sample2$y.1), ]
+
+  test2<-misr.aqspm10.met.ss[(misr.aqspm10.met.ss$x.1 %in% location.sample2$x.1
+                            & misr.aqspm10.met.ss$y.1 %in% location.sample2$y.1), ]
 
 
-gam.st.MISR.AODsmall.met3<-gam(Daily.Mean.PM2.5.Concentration~s(AODsmall)+s(x,y)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=MISR.AQS.met.ss)
+  gam.st.pm10<-gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=11)+s(julian2,k=4), na.action=na.exclude,data=train2)
+  gam.st.pm10.met<-gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=11)+s(julian2,k=4)+dew.point+wind.sp, na.action=na.exclude,data=train2)
 
-gam.st.MISR.AODlarge.met3<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x,y)+s(julian2)+dew.point+wind.sp, na.action=na.exclude,data=MISR.AQS.met.ss)
+  gam.st2.pm10<-gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+s(julian2,k=4), na.action=na.exclude,data=train2)
+  gam.st2.pm10.met<-gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+s(julian2,k=4)+dew.point+wind.sp, na.action=na.exclude,data=train2)
 
-plot(MISR.AQS.met.ss$AOD,MISR.AQS.met.ss$ceiling.ht)
-plot(MISR.AQS.met.ss$Daily.Mean.PM2.5.Concentration,MISR.AQS.met.ss$temp)
-hist(met.08.09$ceiling.ht,breaks=50)
+  gam.st.pred.pm10<-predict.gam(gam.st.pm10,newdata=test2)
+  gam.st.pred.pm10.merge<-cbind(gam.st.pred.pm10,test2)
+  gam.st.resid.pm10<-data.frame(resid=gam.st.pm10$residuals, y=gam.st.pm10$y,fitted=gam.st.pm10$fitted.values)
+
+  gam.st.pred.pm10.met<-predict.gam(gam.st.pm10.met,newdata=test2)
+  gam.st.pred.pm10.met.merge<-cbind(gam.st.pred.pm10.met,test2)
+  gam.st.resid.pm10.met<-data.frame(resid=gam.st.pm10.met$residuals, y=gam.st.pm10.met$y,fitted=gam.st.pm10.met$fitted.values)
+
+  gam.st2.pred.pm10<-predict.gam(gam.st2.pm10,newdata=test2)
+  gam.st2.pred.pm10.merge<-cbind(gam.st2.pred.pm10,test2)
+  gam.st2.resid.pm10<-data.frame(resid=gam.st2.pm10$residuals, y=gam.st2.pm10$y,fitted=gam.st2.pm10$fitted.values)
+
+  gam.st2.pred.pm10.met<-predict.gam(gam.st2.pm10.met,newdata=test2)
+  gam.st2.pred.pm10.met.merge<-cbind(gam.st2.pred.pm10.met,test2)
+  gam.st2.resid.pm10.met<-data.frame(resid=gam.st2.pm10.met$residuals, y=gam.st2.pm10.met$y,fitted=gam.st2.pm10.met$fitted.values)
+
+  gam.pred.pm10.list[[i]]<-gam.st.pred.pm10.merge
+  gam.pred.pm10.met.list[[i]]<-gam.st.pred.pm10.met.merge
+  gam.resid.pm10.list[[i]]<-gam.st.resid.pm10
+  gam.resid.pm10.met.list[[i]]<-gam.st.resid.pm10.met
+
+  gam.pred.pm10.list2[[i]]<-gam.st2.pred.pm10.merge
+  gam.pred.pm10.met.list2[[i]]<-gam.st2.pred.pm10.met.merge
+  gam.resid.pm10.list2[[i]]<-gam.st2.resid.pm10
+  gam.resid.pm10.met.list2[[i]]<-gam.st2.resid.pm10.met
+
+}
 
