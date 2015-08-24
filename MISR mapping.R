@@ -63,7 +63,7 @@ col.ramp <-rbPal(length(AOD.breaks))
 misr.04.21.08$Col <- rbPal(10)[as.numeric(cut(misr.04.21.08$AOD, breaks = quantile(misr.04.21.08$AOD, seq(0,1,1/10))))]
 
 pdf('MISRmap_predictionsPM25.pdf')
-map <- GetMap(center=c(34.42,  -118.1), maptype='satellite', zoom=7)
+map <- GetMap(center=c(34.5,  -118.3), maptype='satellite', zoom=7)
 PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=.7,pch=22,bg=misr.04.21.08$Col)
 PlotOnStaticMap(map,aqs.04.21.08$SITE_LATITUDE,aqs.04.21.08$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
 PlotOnStaticMap(map,STN.site.CA$Latitude, STN.site.CA$Longitude, cex=1.5,pch="*", col='purple',add=TRUE)
