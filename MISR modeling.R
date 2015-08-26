@@ -34,7 +34,7 @@ misr.aqspm10$dow<-(weekdays(as.Date(misr.aqspm10$date2,"%Y-%m-%d")))
 misr.stn$dow<-(weekdays(as.Date(misr.stn$date,"%m/%d/%y")))
 
 misr.aqspm25.met$dow<-(weekdays(as.Date(misr.aqspm25.met$date,"%m/%d/%y")))
-misr.aqspm10.met$dow<-(weekdays(as.Date(misr.aqspm10.met$date2,"%Y/%m/%d")))
+misr.aqspm10.met$dow<-(weekdays(as.Date(misr.aqspm10.met$date2,"%Y-%m-%d")))
 misr.stn.met$dow<-(weekdays(as.Date(misr.stn.met$date,"%m/%d/%y")))
 
 # Remove AOD greater than 1 and AODlarge = 0
@@ -349,21 +349,6 @@ capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k
 # capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+julian2+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
 
 #### Cross-Validation ####
-# Use s-t model to predict PM2.5 from full AOD
-misr.04.21.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==4 & misr.08.09$day==21,]
-misr.04.21.08$julian2<-misr.04.21.08$julian/10000
-misr.04.21.08<-misr.04.21.08[,-1]
-predicted.pm25.04.21.08<-predict.gam(gam.st.MISR.AOD2, newdata=misr.04.21.08)
-# merge with data
-misr.04.21.08$predPM25<-predicted.pm25.04.21.08
-
-gam.st.MISR.AOD2log<-gam(log(Daily.Mean.PM2.5.Concentration)~s(AOD,k=10)+s(x,y)+s(julian2), na.action=na.exclude,data=MISR.AQS.ss)
-predicted.pm25.04.21.08<-predict.gam(gam.st.MISR.AOD2log, newdata=misr.04.21.08)
-# merge with data
-misr.04.21.08$predPM25log<-exp(predicted.pm25.04.21.08)
-
-
- # Cross Validation 
 
 misr.aqspm25.points<-unique(misr.aqspm25.met.ss[,35:36])
 
@@ -455,12 +440,12 @@ tiff('MISR.PM25.CV.tiff')
 grid.arrange(plot6,plot8,nrow=1,ncol=2)
 dev.off()
 
-# Plot prediction over time with observed
+# Plot prediction over time with observed gam.pred.pm25 and gam.pred.pm25.met
 # Site with max latitude (remote, low concentration) pred.site1, site in LA with dense monitoring pred.site2
-pred.site1<-gam.pred.pm25[gam.pred.pm25$AQS_SITE_ID=="06-065-9001",]
+pred.site1<-gam.pred.pm25[gam.pred.pm25$AQS_SITE_ID=="06-037-4002",] # use 06-037-4002
 pred.site2<-gam.pred.pm25[gam.pred.pm25$AQS_SITE_ID=="06-071-9004",]
 
-tiff('MISR.PM25.CV.Kern.tiff')
+pdf('MISR.PM25.CV.LA.pdf')
 ggplot(data = pred.site1, aes(as.Date(date2,"%Y-%m-%d"))) + 
   geom_line(aes(y= gam.st.pred.pm25, color="red")) + 
   geom_line(aes(y=Daily.Mean.PM2.5.Concentration)) +
@@ -576,14 +561,15 @@ pdf('MISR.PM25.PM10.CV.pdf')
 grid.arrange(plot6,plot11,nrow=2,ncol=1)
 dev.off()
 
-pred.site3<-gam.pred.pm10[gam.pred.pm10$AQS_SITE_ID=="06-071-9004",]
+pred.site3<-gam.pred.pm10[gam.pred.pm10$AQS_SITE_ID=="06-037-0016",] # "06-071-9004" San Bernadino
+pred.site3b<-gam.pred2.pm10[gam.pred2.pm10$AQS_SITE_ID=="06-065-0004",]
 
-pdf('MISR.PM10.CV.LA.pdf')
-ggplot(data = pred.site3, aes(as.Date(date2,"%Y-%m-%d"))) + 
-  geom_line(aes(y= gam.st.pred.pm10, color="red")) + 
+pdf('MISR.PM10.AODlarge.CV.OC.pdf')
+ggplot(data = pred.site3b, aes(as.Date(date2,"%Y-%m-%d"))) + 
+  geom_line(aes(y= gam.st2.pred.pm10, color="red")) + 
   geom_line(aes(y=Daily.Mean.PM10.Concentration)) +
   geom_point(aes(y=Daily.Mean.PM10.Concentration)) +
-  geom_point(aes(y= gam.st.pred.pm10, color="red"))+
+  geom_point(aes(y= gam.st2.pred.pm10, color="red"))+
   theme(legend.position="none",
         axis.line = element_line(colour = "black"),
         panel.grid.minor = element_blank(),
@@ -591,3 +577,29 @@ ggplot(data = pred.site3, aes(as.Date(date2,"%Y-%m-%d"))) +
         panel.background = element_blank())+
   labs(x = "Date",y=expression('PM'[10]*', ug/m'^3))
 dev.off()
+
+
+##### Use s-t model to predict PM2.5 and PM10 from full AOD ###
+
+# PM2.5 model
+gam.st.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm25.ss)
+
+misr.04.21.08<-misr.08.09[misr.08.09$year==2008 & misr.08.09$month==4 & misr.08.09$day==21,]
+misr.04.21.08$julian2<-misr.04.21.08$julian/10000
+misr.04.21.08$x.1<-misr.04.21.08$x
+misr.04.21.08$y.1<-misr.04.21.08$y
+misr.04.21.08$dow<-(weekdays(as.Date(misr.04.21.08$date,"%m/%d/%y")))
+
+predicted.pm25.04.21.08<-predict.gam(gam.st.pm25, newdata=misr.04.21.08)
+# merge with data
+misr.04.21.08$predPM25<-predicted.pm25.04.21.08
+write.csv(misr.04.21.08,"predicted_pm25_misr_04_21_08.csv")
+
+
+# PM10 model
+gam.st.pm10<-gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.ss)
+
+predicted.pm10.04.21.08<-predict.gam(gam.st.pm10, newdata=misr.04.21.08)
+# merge with data
+misr.04.21.08$predPM10<-predicted.pm10.04.21.08
+write.csv(misr.04.21.08,"predicted_pm_misr_04_21_08.csv")

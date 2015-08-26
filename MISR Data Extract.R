@@ -13,7 +13,6 @@ library(chron) # for converting julian dates
 library(lubridate) # for date interval matching
 library(plyr) # for easy merging/subsetting
 library(dplyr) #for easy merging/subsetting
-library(sas7bdat) # for reading SAS file formats
 library(fields) # for spatial functions
 library(proj4) # for map projections
 library(R.utils) # decompressing NCDC data
@@ -142,8 +141,7 @@ summary(PM10.POC2)
 aqspm10.08.09.ss2<-aqspm10.08.09.ss[aqspm10.08.09.ss$POC %in% c(1,2,3,4,5),]
 aqspm10.08.09.ss3<- ddply(aqspm10.08.09.ss2, .(month, day, year,AQS_SITE_ID), summarise, Daily.Mean.PM10.Concentration=mean(Daily.Mean.PM10.Concentration,na.rm=TRUE),
                           x=mean(x),y=mean(y),SITE_LATITUDE=mean(SITE_LATITUDE),SITE_LONGITUDE=mean(SITE_LONGITUDE))
-
-#aqspm10.08.09.ss2$date2<- mdy(aqspm10.08.09.ss2$Date) #use lubridate function for date matching (ICV)
+aqspm10.08.09.ss3$date<-as.Date(paste(aqspm10.08.09.ss3$month, aqspm10.08.09.ss3$day, aqspm10.08.09.ss3$year, sep = "/" )  , format = "%m/%d/%Y" )
 
 
 # Write (read) .csv
@@ -153,6 +151,7 @@ write.csv(aqspm25.08.09,"/Users/mf/Documents/MISR/Data/aqsppm25_08_09.csv",row.n
 aqspm25.08.09.ss2<-read.csv("/Users/mf/Documents/MISR/Data/aqsPM25_08_09_ss_frm.csv")
 
 write.csv(aqspm10.08.09.ss2,"/Users/mf/Documents/MISR/Data/aqspm10_08_09_ss.csv",row.names=FALSE) # subset to CA
+write.csv(aqspm10.08.09.ss3,"/Users/mf/Documents/MISR/Data/aqspm10_08_09_new.csv",row.names=FALSE) # subset to CA
 write.csv(aqspm10.08.09,"/Users/mf/Documents/MISR/Data/aqspm10_08_09.csv",row.names=FALSE) # not subset
 aqspm10.08.09.ss2<-read.csv("/Users/mf/Documents/MISR/Data/aqspm10_08_09_ss.csv",row.names=FALSE)
 

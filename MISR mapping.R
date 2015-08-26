@@ -33,16 +33,16 @@ met.08.09.ss<-met.08.09[met.08.09$lat>33.65,]
 met.points<-unique(met.08.09.ss[,4:5])
 
 # Matched MISR-AQS points
-aqspm25.matchpoints<-unique(misr.aqspm25.ss2[,29:30])
-aqspm10.matchpoints<-unique(misr.aqspm10.ss2[,29:30])
-
-
+aqspm25.matchpoints<-unique(misr.aqspm25[,29:30])
+aqspm10.matchpoints<-unique(misr.aqspm10[,28:29])
+aqspm10.matchpoint1<-unique(misr.aqspm10[misr.aqspm10$AQS_SITE_ID=="06-065-0004",28:29])
+aqspm25.matchpoint1<-unique(misr.aqspm25[misr.aqspm25$AQS_SITE_ID=="06-037-4002",29:30])
 # Plot locations map
 png('MISRmap_locations2.png')
-  map <- GetMap(center=c(34.5,  -118.3), maptype='hybrid', zoom=7)
+  map <- GetMap(center=c(33.9,  -118.1), maptype='hybrid', zoom=11)
   PlotOnStaticMap(map,misr.grid$lat, misr.grid$lon, cex=.4,pch=15,col="grey")
-  PlotOnStaticMap(map,aqspm25.points$SITE_LATITUDE,aqspm25.points$SITE_LONGITUDE, cex=1,pch=19,col="cyan",add=TRUE)
-  PlotOnStaticMap(map,aqspm10.points$SITE_LATITUDE,aqspm10.points$SITE_LONGITUDE, cex=0.7,pch=19,col="deeppink",add=TRUE)
+  PlotOnStaticMap(map,aqspm25.matchpoint1$SITE_LATITUDE,aqspm25.matchpoint1$SITE_LONGITUDE, cex=1,pch=19,col="cyan")
+  PlotOnStaticMap(map,aqspm10.matchpoint1$SITE_LATITUDE,aqspm10.matchpoint1$SITE_LONGITUDE, cex=0.7,pch=19,col="deeppink",add=TRUE)
   PlotOnStaticMap(map,met.points$lat, met.points$lon, cex=.7,pch=15,col="green",add=TRUE)
   PlotOnStaticMap(map,stn.points$Latitude, stn.points$Longitude, cex=.8,pch=19,col="yellow",add=TRUE)
   #PlotOnStaticMap(map,aqspm25.matchpoints$SITE_LATITUDE,aqspm25.matchpoints$SITE_LONGITUDE, cex=0.5,pch=19,col="green",add=TRUE)
@@ -62,12 +62,39 @@ AOD.breaks <-quantile(misr.04.21.08$AOD, seq(0,1,1/10))
 col.ramp <-rbPal(length(AOD.breaks))  
 misr.04.21.08$Col <- rbPal(10)[as.numeric(cut(misr.04.21.08$AOD, breaks = quantile(misr.04.21.08$AOD, seq(0,1,1/10))))]
 
+misr.04.21.08.ss<-misr.04.21.08[misr.04.21.08$land.water.mask==3,]
+misr.04.21.08.ss<-misr.04.21.08.ss[misr.04.21.08.ss$predPM10>0,]
+#PM.breaks <-quantile(misr.04.21.08.ss$predPM10, seq(0,1,1/10))
+#col.ramp <-rbPal(length(PM.breaks))  
+#misr.04.21.08.ss$PredCol <- rbPal(10)[as.numeric(cut(misr.04.21.08.ss$predPM25, breaks = quantile(misr.04.21.08.ss$predPM25, seq(0,1,1/10))))]
+
+map <- qmap('Los Angeles', zoom = 7, maptype = 'hybrid')
+#plot the crime points on top
+pdf('PM10pred1.pdf')
+map + geom_point(data = misr.04.21.08.ss, aes(x = lon, y = lat, color=predPM10), shape=c, size=2, alpha=0.4)+ scale_color_gradientn(colours=matlab.like(10))
+dev.off()
+
+map <- qmap('Los Angeles', zoom = 7, maptype = 'hybrid')
+#plot the crime points on top
+pdf('PM10pred1.pdf')
+map + geom_point(data = misr.04.21.08.ss, aes(x = lon, y = lat, color=predPM25), shape=c, size=2, alpha=0.4)+ scale_color_gradientn(colours=matlab.like(10))
+dev.off()
+
+
+pdf('MISRmap4.pdf')
+map <- GetMap(center=c(34.42,  -118.1), maptype='hybrid', zoom=7)
+PlotOnStaticMap(map,misr.04.21.08.ss$lat, misr.04.21.08.ss$lon, cex=.7,pch=22,bg=misr.04.21.08.ss$PredCol)
+#PlotOnStaticMap(map,AQS.08.09.ss$SITE_LATITUDE,AQS.08.09.ss$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
+legend(locator(1),legend=c(round(PM.breaks,digits=2)),fill=c(col.ramp),box.col='white',bty='o',bg="white",cex=0.5,title="Predicted PM2.5 04/21/08")
+dev.off()
+
+
 pdf('MISRmap_predictionsPM25.pdf')
 map <- GetMap(center=c(34.5,  -118.3), maptype='satellite', zoom=7)
 PlotOnStaticMap(map,misr.04.21.08$lat, misr.04.21.08$lon, cex=.7,pch=22,bg=misr.04.21.08$Col)
-PlotOnStaticMap(map,aqs.04.21.08$SITE_LATITUDE,aqs.04.21.08$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
-PlotOnStaticMap(map,STN.site.CA$Latitude, STN.site.CA$Longitude, cex=1.5,pch="*", col='purple',add=TRUE)
-legend('bottomleft',legend=c(round(AOD.breaks,digits=2),"AQS"),fill=c(col.ramp,"lightblue"),box.col='white',bty='o',bg="white",cex=0.5,title="MISR AOD 04/21/08")
+#PlotOnStaticMap(map,aqs.04.21.08$SITE_LATITUDE,aqs.04.21.08$SITE_LONGITUDE, cex=1,pch=22,col="lightblue",lwd=2,add=TRUE)
+#PlotOnStaticMap(map,STN.site.CA$Latitude, STN.site.CA$Longitude, cex=1.5,pch="*", col='purple',add=TRUE)
+legend('bottomleft',legend=c(round(AOD.breaks,digits=2),"AOD"),fill=c(col.ramp,"lightblue"),box.col='white',bty='o',bg="white",cex=0.5,title="MISR AOD 04/21/08")
 dev.off()
 
 rbPal <- colorRampPalette(tim.colors(32))
