@@ -39,14 +39,26 @@ misr.stn.met$dow<-(weekdays(as.Date(misr.stn.met$date,"%m/%d/%y")))
 
 # Remove AOD greater than 1 and AODlarge = 0
 misr.aqspm25.ss<-misr.aqspm25[misr.aqspm25$AOD<1,]
-misr.aqspm25.ss2<-misr.aqspm25.ss[misr.aqspm25.ss$AODlargefrac>0,]
+#misr.aqspm25.ss2<-misr.aqspm25.ss[misr.aqspm25.ss$AODlargefrac>0,]
 misr.aqspm10.ss<-misr.aqspm10[misr.aqspm10$AOD<1,]
-misr.aqspm10.ss2<-misr.aqspm10.ss[misr.aqspm10.ss$AODlargefrac>0,]
+#misr.aqspm10.ss2<-misr.aqspm10.ss[misr.aqspm10.ss$AODlargefrac>0,]
 
 misr.aqspm25.met.ss<-misr.aqspm25.met[misr.aqspm25.met$AOD<1,]
-misr.aqspm25.met.ss2<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$AODlargefrac>0,]
+#misr.aqspm25.met.ss2<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$AODlargefrac>0,]
 misr.aqspm10.met.ss<-misr.aqspm10.met[misr.aqspm10.met$AOD<1,]
-misr.aqspm10.met.ss2<-misr.aqspm10.met.ss[misr.aqspm10.met.ss$AODlargefrac>0,]
+#misr.aqspm10.met.ss2<-misr.aqspm10.met.ss[misr.aqspm10.met.ss$AODlargefrac>0,]
+
+# Identify STN days and subset PM25 and PM10 matched AOD for these days
+misr.aqspm25.match.stn<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$day %in% misr.stn$day &
+                                  misr.aqspm25.met.ss$month %in% misr.stn$month &
+                                  misr.aqspm25.met.ss$year %in% misr.stn$year,] 
+
+misr.aqspm10.match.stn<-misr.aqspm10.met.ss[misr.aqspm10.met.ss$day %in% misr.stn$day &
+                                              misr.aqspm10.met.ss$month %in% misr.stn$month &
+                                              misr.aqspm10.met.ss$year %in% misr.stn$year,]
+
+write.csv(misr.aqspm25.match.stn,"/Users/mf/Documents/MISR/Data/misr_aqspm25_stn_match.csv")
+write.csv(misr.aqspm10.match.stn,"/Users/mf/Documents/MISR/Data/misr_aqspm10_stn_match.csv")
 
 
 #### MISR AOD and AQS PM2.5 ####
@@ -55,6 +67,7 @@ cor.test(misr.aqspm25.ss$AOD,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
 cor.test(misr.aqspm25.ss$AODsmall,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
 cor.test(misr.aqspm25.ss$AODlarge,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
 
+#### Models #####
 # Title (writes new file)
 cat("PM25 Summary Stats", file = "SummaryStatsPM25.txt")
 # add new lines
@@ -112,6 +125,10 @@ cat("GAM mod AODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODsmall), data=misr.aqspm25.ss2)), file = "SummaryStatsPM25.txt", append = TRUE)
 cat("GAM mod logAODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(log(AODsmall)), data=misr.aqspm25.ss2)), file = "SummaryStatsPM25.txt", append = TRUE)
+
+cat("GAM mod AOD PM25 match STN days\n", file = "SummaryStatsPM25.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AOD), data=misr.aqspm25.match.stn)), file = "SummaryStatsPM25.txt", append = TRUE)
+
 
 #### MISR AOD and AQS PM10 ####
 # Summary statistics
@@ -172,17 +189,29 @@ cat("GAM mod AODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODsmall), data=misr.aqspm10.ss2)), file = "SummaryStatsPM10.txt", append = TRUE)
 cat("GAM mod logAODsmall PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(log(AODsmall)), data=misr.aqspm10.ss2)), file = "SummaryStatsPM10.txt", append = TRUE)
+cat("GAM mod AOD PM10 STN days\n", file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD), data=misr.aqspm10.match.stn)), file = "SummaryStatsPM10.txt", append = TRUE)
+
 
 # Plots
 pdf('MISR.AOD.PM25.pdf')
 p<-qplot(AOD,Daily.Mean.PM2.5.Concentration, data=misr.aqspm25.ss,xlab="MISR AOD",ylab=expression("AQS PM"[2.5]*", ug/m"^3))
 p+stat_smooth(method="gam",formula=y~s(x)) +stat_smooth(method='lm',formula=y~x,col='red')
 dev.off()
+pdf('MISR.AOD.PM25.stnmatch.pdf')
+p<-qplot(AOD,Daily.Mean.PM2.5.Concentration, data=misr.aqspm25.match.stn,xlab="MISR AOD",ylab=expression("AQS PM"[2.5]*", ug/m"^3))
+p+stat_smooth(method="gam",formula=y~s(x)) +stat_smooth(method='lm',formula=y~x,col='red')
+dev.off()
+
 pdf('MISR.AOD.PM10.pdf')
 p<-qplot(AOD,Daily.Mean.PM10.Concentration, data=misr.aqspm10.ss,xlab="MISR AOD",ylab=expression("AQS PM"[10]*", ug/m"^3))
 p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 dev.off()
 
+pdf('MISR.AOD.PM10.stnmatch.pdf')
+p<-qplot(AOD,Daily.Mean.PM10.Concentration, data=misr.aqspm10.match.stn,xlab="MISR AOD",ylab=expression("AQS PM"[10]*", ug/m"^3))
+p+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
+dev.off()
 
 # MISR AOD and STN
 # Title (writes new file)
@@ -312,6 +341,13 @@ capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)
 cat("ST model PM25 AODlarge\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 cat("\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm25.ss2)), file = "SpatioTemporalModels2.txt", append = TRUE)
+cat("\n", file = "SpatioTemporalModels2.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm25.match.stn)), file = "SpatioTemporalModels2.txt", append = TRUE)
+cat("\n", file = "SpatioTemporalModels2.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm25.match.stn)), file = "SpatioTemporalModels2.txt", append = TRUE)
+
+
+
 #ST PM10-AOD
 cat("ST model PM10 AOD\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels2.txt", append = TRUE)
@@ -319,6 +355,9 @@ cat("ST model PM10 AOD version 2\n", file = "SpatioTemporalModels2.txt", append 
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2,k=4)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels2.txt", append = TRUE)
 cat("ST model PM10 AOD version 3\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2,k=3)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels2.txt", append = TRUE)
+cat("ST model PM10 AOD version 3\n", file = "SpatioTemporalModels2.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=12)+s(julian2,k=3)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.match.stn)), file = "SpatioTemporalModels2.txt", append = TRUE)
+
 
 cat("ST model PM10 AODlarge\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels2.txt", append = TRUE)
@@ -326,6 +365,8 @@ cat("ST model PM10 AODlarge version 2 \n", file = "SpatioTemporalModels2.txt", a
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2,k=4)+s(month,bs="cc",k=4)+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels2.txt", append = TRUE)
 cat("ST model PM10 AODlarge version 3 \n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=12)+s(julian2,k=3)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.ss)), file = "SpatioTemporalModels2.txt", append = TRUE)
+cat("ST model PM10 match STN AODlarge  \n", file = "SpatioTemporalModels2.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge,k=4)+s(x.1,y.1,k=12)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm10.match.stn)), file = "SpatioTemporalModels2.txt", append = TRUE)
 
 
 # ST PM25-AOD with met
@@ -333,14 +374,18 @@ cat("ST model PM25 AOD met\n", file = "SpatioTemporalModels2.txt", append = TRUE
 capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+s(month, bs="cc")+as.factor(dow)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss)), file = "SpatioTemporalModels2.txt", append = TRUE)
 cat("ST model PM25 AODlarge met\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+s(month, bs="cc")+as.factor(dow)+dew.point+wind.sp, na.action=na.exclude,data=misr.aqspm25.met.ss2)), file = "SpatioTemporalModels2.txt", append = TRUE)
+cat("ST model PM25 AOD met STN match days\n", file = "SpatioTemporalModels2.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+s(month, bs="cc")+as.factor(dow)+temp+wind.sp, na.action=na.exclude,data=misr.aqspm25.match.stn)), file = "SpatioTemporalModels2.txt", append = TRUE)
+
+
 # ST PM10-AOD with met
 cat("ST model PM10 AOD met\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=10)+s(julian2,k=5)+s(month, bs="cc")+as.factor(dow)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met)), file = "SpatioTemporalModels2.txt", append = TRUE)
 cat("ST model PM10 AODlarge met\n", file = "SpatioTemporalModels2.txt", append = TRUE)
 capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=10)+s(julian2,k=5)+s(month, bs="cc")+as.factor(dow)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met)), file = "SpatioTemporalModels2.txt", append = TRUE)
 # ST PM10 linear AOD with met
-# cat("ST model PM10 linear AOD met\n", file = "SpatioTemporalModels.txt", append = TRUE)
-# capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=11)+s(julian2)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
+cat("ST model PM10 AOD met STN match\n", file = "SpatioTemporalModels.txt", append = TRUE)
+capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AOD)+s(x.1,y.1,k=10)+s(julian2,k=5)+s(month, bs="cc")+as.factor(dow)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.match.stn)), file = "SpatioTemporalModels.txt", append = TRUE)
 # cat("ST model PM10 linear AODlarge met version 2\n", file = "SpatioTemporalModels.txt", append = TRUE)
 # capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+s(julian2,k=4)+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
 # cat("ST model PM10 linear AODlarge met version 3\n", file = "SpatioTemporalModels.txt", append = TRUE)
@@ -348,9 +393,10 @@ capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k
 # cat("ST model PM10 linear AODlarge met version 4\n", file = "SpatioTemporalModels.txt", append = TRUE)
 # capture.output(summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge)+s(x.1,y.1,k=11)+julian2+wind.sp+atm.press, na.action=na.exclude,data=misr.aqspm10.met.ss)), file = "SpatioTemporalModels.txt", append = TRUE)
 
-#### Cross-Validation ####
-
-misr.aqspm25.points<-unique(misr.aqspm25.met.ss[,35:36])
+#### PM2.5 Cross-Validation ####
+#misr.aqspm25.match.stn
+#misr.aqspm25.met.ss
+misr.aqspm25.points<-unique(misr.aqspm25.match.stn[,35:36])
 
 gam.pred.pm25.list<-vector('list',dim(misr.aqspm25.points)[1])
 gam.resid.pm25.list<-vector('list',dim(misr.aqspm25.points)[1])
@@ -366,13 +412,13 @@ gam.resid.pm25.met.list2<-vector('list',dim(misr.aqspm25.points)[1])
 for (i in 1:dim(misr.aqspm25.points)[1]){
   location.sample1<-misr.aqspm25.points[i,]
 
-  train1<-misr.aqspm25.met.ss[!(misr.aqspm25.met.ss$x.1 %in% location.sample1$x.1
-                           & misr.aqspm25.met.ss$y.1 %in% location.sample1$y.1), ]
-  test1<-misr.aqspm25.met.ss[(misr.aqspm25.met.ss$x.1 %in% location.sample1$x.1
-                         & misr.aqspm25.met.ss$y.1 %in% location.sample1$y.1), ]
+  train1<-misr.aqspm25.met.ss[!(misr.aqspm25.match.stn$x.1 %in% location.sample1$x.1
+                           & misr.aqspm25.match.stn$y.1 %in% location.sample1$y.1), ]
+  test1<-misr.aqspm25.met.ss[(misr.aqspm25.match.stn$x.1 %in% location.sample1$x.1
+                         & misr.aqspm25.match.stn$y.1 %in% location.sample1$y.1), ]
 
   gam.st.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs='cc')+as.factor(dow), na.action=na.exclude,data=train1)
-  gam.st.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs='cc')+as.factor(dow)+dew.point+wind.sp, na.action=na.exclude,data=train1)
+  gam.st.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs='cc')+as.factor(dow)+temp+wind.sp, na.action=na.exclude,data=train1)
   
   gam.st2.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs='cc')+as.factor(dow), na.action=na.exclude,data=train1)
   gam.st2.pm25.met<-gam(Daily.Mean.PM2.5.Concentration~s(AODlarge)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs='cc')+as.factor(dow)+dew.point+wind.sp, na.action=na.exclude,data=train1)
@@ -405,10 +451,10 @@ for (i in 1:dim(misr.aqspm25.points)[1]){
 
 }
 
-gam.pred.pm25 <- do.call("rbind", gam.pred.pm25.list) 
-gam.pred.pm25.met <- do.call("rbind", gam.pred.pm25.met.list) 
-gam.pred2.pm25 <- do.call("rbind", gam.pred.pm25.list2) 
-gam.pred2.pm25.met <- do.call("rbind", gam.pred.pm25.met.list2) 
+gam.pred.pm25 <- do.call("rbind", gam.pred.pm25.list) # AOD no met
+gam.pred.pm25.met <- do.call("rbind", gam.pred.pm25.met.list) # AOD with met
+gam.pred2.pm25 <- do.call("rbind", gam.pred.pm25.list2) # AOD large no met
+gam.pred2.pm25.met <- do.call("rbind", gam.pred.pm25.met.list2) # AOD large with met
 
 
 obs.pred.AOD<-lm(Daily.Mean.PM2.5.Concentration~gam.st.pred.pm25, data=gam.pred.pm25)
@@ -446,7 +492,7 @@ pred.site1<-gam.pred.pm25[gam.pred.pm25$AQS_SITE_ID=="06-037-4002",] # use 06-03
 pred.site2<-gam.pred.pm25[gam.pred.pm25$AQS_SITE_ID=="06-071-9004",]
 
 pdf('MISR.PM25.CV.LA.pdf')
-ggplot(data = pred.site1, aes(as.Date(date2,"%Y-%m-%d"))) + 
+ggplot(data = pred.site2, aes(as.Date(date2,"%Y-%m-%d"))) + 
   geom_line(aes(y= gam.st.pred.pm25, color="red")) + 
   geom_line(aes(y=Daily.Mean.PM2.5.Concentration)) +
   geom_point(aes(y=Daily.Mean.PM2.5.Concentration)) +
@@ -475,7 +521,7 @@ dev.off()
 
 
 # Cross validation PM10
-misr.aqspm10.points<-unique(misr.aqspm10.met[,26:27])
+misr.aqspm10.points<-unique(misr.aqspm10.met[,27:28])
 gam.pred.pm10.list<-vector('list',length(misr.aqspm10.points))
 gam.resid.pm10.list<-vector('list',length(misr.aqspm10.points))
 gam.pred.pm10.met.list<-vector('list',length(misr.aqspm10.points))
@@ -561,15 +607,18 @@ pdf('MISR.PM25.PM10.CV.pdf')
 grid.arrange(plot6,plot11,nrow=2,ncol=1)
 dev.off()
 
-pred.site3<-gam.pred.pm10[gam.pred.pm10$AQS_SITE_ID=="06-037-0016",] # "06-071-9004" San Bernadino
-pred.site3b<-gam.pred2.pm10[gam.pred2.pm10$AQS_SITE_ID=="06-065-0004",]
+#pred.site1<-gam.pred.pm25[gam.pred.pm25$AQS_SITE_ID=="06-037-4002",] # use 06-037-4002
+pred.site2<-gam.pred.pm25[gam.pred.pm25$AQS_SITE_ID=="06-071-9004",]
+
+pred.site3<-gam.pred.pm10[gam.pred.pm10$AQS_SITE_ID=="06-071-9004",] # "06-071-9004" San Bernadino
+pred.site4<-gam.pred2.pm10[gam.pred.pm10$AQS_SITE_ID=="06-037-4002",]
 
 pdf('MISR.PM10.AODlarge.CV.OC.pdf')
-ggplot(data = pred.site3b, aes(as.Date(date2,"%Y-%m-%d"))) + 
-  geom_line(aes(y= gam.st2.pred.pm10, color="red")) + 
+ggplot(data = pred.site3, aes(as.Date(date2,"%Y-%m-%d"))) + 
+  geom_line(aes(y= gam.st.pred.pm10, color="red")) + 
   geom_line(aes(y=Daily.Mean.PM10.Concentration)) +
   geom_point(aes(y=Daily.Mean.PM10.Concentration)) +
-  geom_point(aes(y= gam.st2.pred.pm10, color="red"))+
+  geom_point(aes(y= gam.st.pred.pm10, color="red"))+
   theme(legend.position="none",
         axis.line = element_line(colour = "black"),
         panel.grid.minor = element_blank(),
@@ -578,8 +627,28 @@ ggplot(data = pred.site3b, aes(as.Date(date2,"%Y-%m-%d"))) +
   labs(x = "Date",y=expression('PM'[10]*', ug/m'^3))
 dev.off()
 
+pdf('MISR.PM25.PM10.CV.3.pdf')
+ggplot(data = pred.site4, aes(as.Date(date2,"%Y-%m-%d"))) + 
+  geom_line(aes(y= gam.st2.pred.pm10, color="red")) + 
+  geom_line(aes(y=Daily.Mean.PM10.Concentration)) +
+  geom_point(aes(y=Daily.Mean.PM10.Concentration)) +
+  geom_point(aes(y= gam.st2.pred.pm10, color="red"))+
+  geom_line(data=pred.site1,aes(y=gam.st.pred.pm25,color="blue")) +
+  geom_point(data=pred.site1,aes(y=gam.st.pred.pm25,color="blue")) +
+  geom_line(data=pred.site1,aes(y=Daily.Mean.PM2.5.Concentration)) +
+  geom_point(data=pred.site1,aes(y=Daily.Mean.PM2.5.Concentration)) +
+  theme(legend.position="none",
+        axis.line = element_line(colour = "black"),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())+
+  labs(x = "Date",y=expression('PM, ug/m'^3))
+dev.off()
+
 
 ##### Use s-t model to predict PM2.5 and PM10 from full AOD ###
+
+count(misr.08.09,"date")
 
 # PM2.5 model
 gam.st.pm25<-gam(Daily.Mean.PM2.5.Concentration~s(AOD)+s(x.1,y.1,k=16)+s(julian2)+s(month,bs="cc")+as.factor(dow), na.action=na.exclude,data=misr.aqspm25.ss)
@@ -593,7 +662,49 @@ misr.04.21.08$dow<-(weekdays(as.Date(misr.04.21.08$date,"%m/%d/%y")))
 predicted.pm25.04.21.08<-predict.gam(gam.st.pm25, newdata=misr.04.21.08)
 # merge with data
 misr.04.21.08$predPM25<-predicted.pm25.04.21.08
+misr.04.21.08<-misr.04.21.08[misr.04.21.08$AOD<1,]
+misr.04.21.08<-misr.04.21.08[misr.04.21.08$predPM25>0,]
 write.csv(misr.04.21.08,"predicted_pm25_misr_04_21_08.csv")
+
+misr.06.27.09<-misr.08.09[misr.08.09$year==2009 & misr.08.09$month==6 & misr.08.09$day==27,]
+misr.06.27.09$julian2<-misr.06.27.09$julian/10000
+misr.06.27.09$x.1<-misr.06.27.09$x
+misr.06.27.09$y.1<-misr.06.27.09$y
+misr.06.27.09$dow<-(weekdays(as.Date(misr.06.27.09$date,"%m/%d/%y")))
+
+predicted.pm25.06.27.09<-predict.gam(gam.st.pm25, newdata=misr.06.27.09)
+
+# merge with data
+misr.06.27.09$predPM25<-predicted.pm25.06.27.09
+write.csv(misr.06.27.09,"predicted_pm25_misr_06_27_09.csv")
+
+
+misr.08.14.09<-misr.08.09[misr.08.09$year==2009 & misr.08.09$month==8 & misr.08.09$day==14,]
+misr.08.14.09$julian2<-misr.08.14.09$julian/10000
+misr.08.14.09$x.1<-misr.08.14.09$x
+misr.08.14.09$y.1<-misr.08.14.09$y
+misr.08.14.09$dow<-(weekdays(as.Date(misr.08.14.09$date,"%m/%d/%y")))
+
+predicted.pm25.08.14.09<-predict.gam(gam.st.pm25, newdata=misr.08.14.09)
+
+# merge with data
+misr.08.14.09$predPM25<-predicted.pm25.08.14.09
+write.csv(misr.08.14.09,"predicted_pm25_misr_08_14_09.csv")
+
+
+
+misr.02.19.09<-misr.08.09[misr.08.09$year==2009 & misr.08.09$month==2 & misr.08.09$day==19,]
+misr.02.19.09$julian2<-misr.02.19.09$julian/10000
+misr.02.19.09$x.1<-misr.02.19.09$x
+misr.02.19.09$y.1<-misr.02.19.09$y
+misr.02.19.09$dow<-(weekdays(as.Date(misr.02.19.09$date,"%m/%d/%y")))
+
+predicted.pm25.02.19.09<-predict.gam(gam.st.pm25, newdata=misr.02.19.09)
+
+# merge with data
+misr.02.19.09$predPM25<-predicted.pm25.02.19.09
+misr.02.19.09<-misr.02.19.09[misr.02.19.09$predPM25>0,]
+write.csv(misr.02.19.09,"predicted_pm25_misr_02_19_09.csv")
 
 
 # PM10 model
