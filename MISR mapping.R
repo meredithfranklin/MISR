@@ -48,18 +48,22 @@ aqspm10.matchpoint1<-unique(misr.aqspm10[misr.aqspm10$AQS_SITE_ID=="06-065-0004"
 aqspm25.matchpoint1<-unique(misr.aqspm25[misr.aqspm25$AQS_SITE_ID=="06-037-4002",29:30])
 
 # Plot locations map
-pdf('SpatialPointsMap2.pdf')
+pdf('/Users/mf/Dropbox/Grant Proposals/R01 Environmental Stats/Resubmission/Proposal/Research Strategy/Figures/SpatialPointsMap.pdf')
   map <- GetMap(center=c(34.1,  -118.1), maptype='hybrid', zoom=10) # use zoom=7 for full extent
-  PlotOnStaticMap(map,misr.grid$lat, misr.grid$lon, cex=2.5,pch=15,col="grey")
+  PlotOnStaticMap(map,misr.grid$lat, misr.grid$lon, cex=5,pch=0,lty=2,lwd=3,col="black")
   PlotOnStaticMap(map,aqspm25.points$SITE_LATITUDE,aqspm25.points$SITE_LONGITUDE, cex=2,pch=19,col="cyan",add=TRUE)
   PlotOnStaticMap(map,aqspm10.points$SITE_LATITUDE,aqspm10.points$SITE_LONGITUDE, cex=1.9,pch=17,col="deeppink",add=TRUE)
   PlotOnStaticMap(map,met.points$lat, met.points$lon, cex=2,pch="+",col="green",add=TRUE)
  #PlotOnStaticMap(map,stn.points$Latitude, stn.points$Longitude, cex=.8,pch=19,col="yellow",add=TRUE)
   #PlotOnStaticMap(map,aqspm25.matchpoints$SITE_LATITUDE,aqspm25.matchpoints$SITE_LONGITUDE, cex=0.5,pch=19,col="green",add=TRUE)
   #PlotOnStaticMap(map,aqspm10.matchpoints$SITE_LATITUDE,aqspm10.matchpoints$SITE_LONGITUDE, cex=1,pch='+',col="green",add=TRUE)
-  legend("topright",legend=c("Satellite","AQS PM2.5","AQS PM10","Meteorology"),pch=c(15,19,17,3),col=c("grey","cyan","deeppink","green"),
-       box.col='white',bty='o',bg='white',cex=1.8,title="Spatial Locations")
+  legend("topright",legend=c("Satellite","AQS PM2.5","AQS PM10","Meteorology"),pch=c(0,19,17,3),col=c("black","cyan","deeppink","green"),
+       box.col='white',bty='o',bg='white',cex=1,title="Spatial Locations")
 dev.off()
+
+map <- qmap('Los Angeles', zoom = 10 , maptype = 'hybrid')
+map + geom_point(data = misr.grid, aes(x = lon, y = lat, color='grey'), shape=s, size=2, alpha=0.5)
+
 
 # Plot st model predictions PM2.5
 # Pick a particular date for mapping

@@ -6,6 +6,7 @@
 library(mgcv)
 library(ggplot2)
 library(gridExtra)
+library(plyr)
 
 setwd("/Users/mf/Documents/MISR/Reports")
 # Matched MISR-AQS datasets
@@ -20,6 +21,24 @@ misr.aqspm25.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25_met.csv")
 misr.aqspm10.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10_met_new.csv")
 misr.stn.met<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqsstn_met.csv")
 
+# Merge PM2.5 and PM10 by AQS_SITE_ID to examine PM10-PM2.5
+# Generated dataset misr.aqspm2510.met
+# Matched 06-065-8001, 06-037-4002 (LA and Riverside)
+misr.pm10.pm25<-join(misr.aqspm25, misr.aqspm10, by=c('AQS_SITE_ID','month','day','year'))
+#misr.pm10.pm25<-misr.pm10.pm25[,c(4:5,12:19,23,25,30:31,69,86,95:98)]
+misr.pm10.pm25$pm10_pm25<-misr.pm10.pm25$Daily.Mean.PM10.Concentration-misr.pm10.pm25$Daily.Mean.PM2.5.Concentration
+misr.pm10.pm25$pm10_pm25<-ifelse(misr.pm10.pm25$pm10_pm25<0,NA,misr.pm10.pm25$pm10_pm25)
+sum(!is.na(misr.pm10.pm25$pm10_pm25))
+cor(misr.pm10.pm25$Daily.Mean.PM2.5.Concentration,misr.pm10.pm25$Daily.Mean.PM10.Concentration,use="complete")
+cor(misr.aqspm2510.met$AOD,misr.aqspm2510.met$AOD.1,use="complete")
+cor(misr.pm10.pm25$AOD,misr.pm10.pm25$pm10_pm25,use="complete")
+cor(misr.pm10.pm25$AOD,misr.pm10.pm25$Daily.Mean.PM10.Concentration,use="complete")
+plot(misr.pm10.pm25$AOD,misr.pm10.pm25$Daily.Mean.PM10.Concentration)
+misr.aqspm2510.met.ss<-misr.aqspm2510.met[misr.aqspm2510.met$AOD<1,]
+cor(misr.aqspm2510.met.ss$AODlarge,misr.aqspm2510.met.ss$Daily.Mean.PM10.Concentration,use="complete")
+plot(misr.aqspm2510.ss$AODlarge,misr.aqspm2510.ss$Daily.Mean.PM10.Concentration)
+
+
 # Create new Julian date for time indexing, divide by 10000
 misr.aqspm25$julian2<-misr.aqspm25$julian/10000
 misr.aqspm10$julian2<-misr.aqspm10$julian/10000
@@ -28,6 +47,7 @@ misr.stn$julian2<-misr.stn$julian/10000
 misr.aqspm25.met$julian2<-misr.aqspm25.met$julian/10000
 misr.aqspm10.met$julian2<-misr.aqspm10.met$julian/10000
 misr.stn.met$julian2<-misr.stn.met$julian/10000
+misr.pm10.pm25$julian2<-misr.pm10.pm25$julian/1000
 
 misr.aqspm25$dow<-(weekdays(as.Date(misr.aqspm25$date,"%m/%d/%y")))
 misr.aqspm10$dow<-(weekdays(as.Date(misr.aqspm10$date2,"%Y-%m-%d")))
@@ -36,6 +56,13 @@ misr.stn$dow<-(weekdays(as.Date(misr.stn$date,"%m/%d/%y")))
 misr.aqspm25.met$dow<-(weekdays(as.Date(misr.aqspm25.met$date,"%m/%d/%y")))
 misr.aqspm10.met$dow<-(weekdays(as.Date(misr.aqspm10.met$date2,"%Y-%m-%d")))
 misr.stn.met$dow<-(weekdays(as.Date(misr.stn.met$date,"%m/%d/%y")))
+misr.pm10.pm25$dow<-(weekdays(as.Date(misr.pm10.pm25$date,"%m/%d/%y")))
+
+misr.aqspm25.met$AODsm_med<-misr.aqspm25.met$AODsmall+misr.aqspm25.met$AODmed
+misr.aqspm10.met$AODsm_med<-misr.aqspm10.met$AODsmall+misr.aqspm10.met$AODmed
+misr.stn.met$AODsm_med<-misr.stn.met$AODsmall+misr.stn.met$AODmed
+misr.pm10.pm25$AODsm_med<-misr.pm10.pm25$AODsmall+misr.pm10.pm25$AODmed
+
 
 # Remove AOD greater than 1 and AODlarge = 0
 misr.aqspm25.ss<-misr.aqspm25[misr.aqspm25$AOD<1,]
@@ -47,6 +74,9 @@ misr.aqspm25.met.ss<-misr.aqspm25.met[misr.aqspm25.met$AOD<1,]
 #misr.aqspm25.met.ss2<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$AODlargefrac>0,]
 misr.aqspm10.met.ss<-misr.aqspm10.met[misr.aqspm10.met$AOD<1,]
 #misr.aqspm10.met.ss2<-misr.aqspm10.met.ss[misr.aqspm10.met.ss$AODlargefrac>0,]
+misr.pm25pm10.met.ss<-misr.pm10.pm25[misr.pm10.pm25$AOD<1,]
+
+
 
 # Identify STN days and subset PM25 and PM10 matched AOD for these days
 misr.aqspm25.match.stn<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$day %in% misr.stn$day &
@@ -66,6 +96,17 @@ write.csv(misr.aqspm10.match.stn,"/Users/mf/Documents/MISR/Data/misr_aqspm10_stn
 cor.test(misr.aqspm25.ss$AOD,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
 cor.test(misr.aqspm25.ss$AODsmall,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
 cor.test(misr.aqspm25.ss$AODlarge,misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration)
+
+#### MISR AOD and AQS PM10 ####
+# Summary statistics
+cor.test(misr.aqspm10.ss$AOD,misr.aqspm10.ss$Daily.Mean.PM10.Concentration)
+cor.test(misr.aqspm10.ss$AODsmall,misr.aqspm10.ss$Daily.Mean.PM10.Concentration)
+cor.test(misr.aqspm10.ss$AODlarge,misr.aqspm10.ss$Daily.Mean.PM10.Concentration)
+
+#### MISR AOD, AOD large and AQS PM10-PM2.5 ####
+cor(misr.pm25pm10.met.ss$AODlarge,misr.pm25pm10.met.ss$pm10_pm25,use="complete")
+cor(misr.pm25pm10.met.ss$AOD,misr.pm25pm10.met.ss$pm10_pm25,use="complete")
+sum(!is.na(misr.pm25pm10.met.ss$pm10_pm25))
 
 #### Models #####
 # Title (writes new file)
@@ -109,6 +150,25 @@ cat("linear mod AODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
 capture.output(summary(lm(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~(misr.aqspm25.ss$AODsmall))), file = "SummaryStatsPM25.txt", append = TRUE)
 cat("linear mod logAODsmall PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
 capture.output(summary(lm(misr.aqspm25.ss$Daily.Mean.PM2.5.Concentration~log(misr.aqspm25.ss$AODsmall))), file = "SummaryStatsPM25.txt", append = TRUE)
+
+#PM10-PM25
+summary(lm(misr.pm25pm10.met.ss$pm10_pm25~misr.pm25pm10.met.ss$AOD))
+summary(lm(misr.pm25pm10.met.ss$pm10_pm25~misr.pm25pm10.met.ss$AODlarge))
+summary(lm(misr.pm25pm10.met.ss$pm10_pm25~misr.pm25pm10.met.ss$AODmed))
+summary(lm(misr.pm25pm10.met.ss$pm10_pm25~misr.pm25pm10.met.ss$AODsmall))
+summary(gam(pm10_pm25~s(AOD),data=misr.pm25pm10.met.ss))
+summary(gam(pm10_pm25~s(AODlarge),data=misr.pm25pm10.met.ss))
+summary(gam(pm10_pm25~s(AODlarge)+s(julian2)+s(SITE_LATITUDE,SITE_LONGITUDE),data=misr.pm25pm10.met.ss))
+summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge),data=misr.pm25pm10.met.ss))
+summary(gam(Daily.Mean.PM10.Concentration~s(AODlarge),data=misr.aqspm10.met.ss))
+
+# AOD with AODsm_med
+summary(gam(Daily.Mean.PM2.5.Concentration~s(AODsm_med),data=misr.pm25pm10.met.ss))
+summary(gam(Daily.Mean.PM10.Concentration~s(AODsm_med),data=misr.aqspm10.met.ss))
+summary(gam(Daily.Mean.PM2.5.Concentration~s(AODsm_med),data=misr.aqspm25.met.ss))
+summary(gam(Daily.Mean.PM2.5.Concentration~s(AO),data=misr.aqspm25.met.ss))
+
+
 
 # Univariate GAM models
 cat("GAM mod AOD PM25\n", file = "SummaryStatsPM25.txt", append = TRUE)
@@ -169,7 +229,7 @@ cat("linear mod logAOD PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
 capture.output(summary(lm(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~log(misr.aqspm10.ss$AOD))), file = "SummaryStatsPM10.txt", append = TRUE)
 
 cat("linear mod AODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
-capture.output(summary(lm(misr.aqspm10.ss2$Daily.Mean.PM10.Concentration~(misr.aqspm10.ss2$AODlarge))), file = "SummaryStatsPM10.txt", append = TRUE)
+capture.output(summary(lm(misr.aqspm10.ss$Daily.Mean.PM10.Concentration~(misr.aqspm10.ss$AODlarge))), file = "SummaryStatsPM10.txt", append = TRUE)
 cat("linear mod logAODlarge PM10\n", file = "SummaryStatsPM10.txt", append = TRUE)
 capture.output(summary(lm(misr.aqspm10.ss2$Daily.Mean.PM10.Concentration~log(misr.aqspm10.ss2$AODlarge))), file = "SummaryStatsPM10.txt", append = TRUE)
 
