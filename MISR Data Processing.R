@@ -1,4 +1,4 @@
-###### MISR netcdf extract and processing 2000-2011 ####
+###### MISR netcdf extract and processing (California)####
 
 library(ncdf) # for reading netcdf file formats
 library(date) # for converting julian dates
@@ -6,9 +6,7 @@ library(chron) # for converting julian dates
 library(lubridate) # for date interval matching
 library(plyr) # for easy merging/subsetting
 library(dplyr) #for easy merging/subsetting
-library(fields) # for spatial functions
 library(proj4) # for map projections
-library(R.utils) # decompressing NCDC data
 
 #### Geographic projection for California applied to all lat/lon ####
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
@@ -59,5 +57,5 @@ misr.all$x<-newcoords.misr[,1]
 misr.all$y<-newcoords.misr[,2]
 
 # Write (read) csv
-write.csv(misr.all,paste("misr_",min(misr.all$year),"_",max(misr.all$year),".csv"),row.names=FALSE)
+write.csv(misr.all,paste("misr_",min(misr.all$year),"_",max(misr.all$year),".csv", sep=""),row.names=FALSE)
 
