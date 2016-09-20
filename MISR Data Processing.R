@@ -1,6 +1,6 @@
 ###### MISR netcdf extract and processing (California)####
 
-library(ncdf) # for reading netcdf file formats
+library(RNetCDF) # for reading netcdf file formats
 library(date) # for converting julian dates
 library(chron) # for converting julian dates
 library(lubridate) # for date interval matching
@@ -19,18 +19,18 @@ misr.files <- list.files("./",pattern="*_LM_4p4km*",full.names=FALSE)
 # Extract data from netcdf: use RegBestEstimate for AOD, use RegLowestResid for fractions and SS albedo
 misr.list<-vector('list',length(misr.files))
 for(i in 1:length(misr.files)) { 
-  dat<-open.ncdf(misr.files[i])
-  lat<-get.var.ncdf(dat, "Latitude")
-  lon<-get.var.ncdf(dat, "Longitude")
-  julian<-get.var.ncdf(dat, "Julian")
-  AOD<-get.var.ncdf(dat,"RegBestEstimateSpectralOptDepth")
-  AODsmallfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Small")
-  AODmedfrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Medium")
-  AODlargefrac<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Large")
-  AODnonspher<-get.var.ncdf(dat,"RegLowestResidSpectralOptDepthFraction_Nonsphere")
-  SSAlbedo<-get.var.ncdf(dat,"RegLowestResidSpectralSSA")
-  land.water.mask<-get.var.ncdf(dat,"AlgTypeFlag")
-  AOD.mixture.number<-get.var.ncdf(dat,"RegLowestResidMixture")#land=3 water=1
+  dat<-open.nc(misr.files[i])
+  lat<-var.get.nc(dat, "Latitude")
+  lon<-var.get.nc(dat, "Longitude")
+  julian<-var.get.nc(dat, "Julian")
+  AOD<-var.get.nc(dat,"RegBestEstimateSpectralOptDepth")
+  AODsmallfrac<-var.get.nc(dat,"RegLowestResidSpectralOptDepthFraction_Small")
+  AODmedfrac<-var.get.nc(dat,"RegLowestResidSpectralOptDepthFraction_Medium")
+  AODlargefrac<-var.get.nc(dat,"RegLowestResidSpectralOptDepthFraction_Large")
+  AODnonspher<-var.get.nc(dat,"RegLowestResidSpectralOptDepthFraction_Nonsphere")
+  SSAlbedo<-var.get.nc(dat,"RegLowestResidSpectralSSA")
+  land.water.mask<-var.get.nc(dat,"AlgTypeFlag")
+  AOD.mixture.number<-var.get.nc(dat,"RegLowestResidMixture")#land=3 water=1
   AOD.dat<-data.frame(lat=lat,lon=lon,julian=julian,AOD=AOD,AODsmallfrac=AODsmallfrac,AODmedfrac=AODmedfrac,
                       AODlargefrac=AODlargefrac,AODnonspher=AODnonspher,SSAlbedo=SSAlbedo,
                       land.water.mask=land.water.mask, AOD.mixture.number=AOD.mixture.number)
