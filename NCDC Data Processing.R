@@ -11,7 +11,6 @@ stations <- read.csv("/Users/mf/Documents/NCDC/stationlist.csv")
 st.ca<-stations[stations$CTRY=="US" & stations$STATE=="CA",]
 st.ca$BEGIN <- as.numeric(substr(st.ca$BEGIN, 1, 4))
 st.ca$END <- as.numeric(substr(st.ca$END, 1, 4))
-
 st.so.ca<-st.ca[st.ca$LAT>=33.65 & st.ca$LAT<=35.5,]
 st.so.ca<-st.so.ca[st.so.ca$LON>= -120.5 & st.so.ca$LON<= -115.9,]
 # Remove Catalina and buoys
@@ -81,20 +80,23 @@ for (y in 2000:2011){
   }
 }
 met<- do.call("rbind", met.list.all) 
+met<-subset(met,lon >= -120.5 & lon < -115.5 & lat>= 33.65 & lat < 35.5)
 
 # add projected coordinates (California)
 proj.albers<-"+proj=aea +lat_1=34.0 +lat_2=40.5 +lon_0=-120.0 +x_0=0 +y_0=-4000000 +ellps=GRS80 +datum=NAD83 +units=km"
 
 newcoords.met<-project(as.matrix(cbind(met$lon, met$lat)), proj=proj.albers)
+
 met$x<-newcoords.met[,1]
 met$y<-newcoords.met[,2]
 
 # read/write
-write.csv(met,paste("met_",min(met$year),"_",max(met$year),".csv", sep=""),row.names=FALSE)
+write.csv(met,paste("/Users/mf/Documents/NCDC/met_",min(met$year),"_",max(met$year),".csv", sep=""),row.names=FALSE)
 #met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met_08_09.csv")
 # Check
 
 met.points<-unique(met[,4:5])
-map <- qmap('Los Angeles', zoom =8, maptype = 'satellite')
-map + geom_point(data = met.points, aes(x = lon, y = lat),col="magenta", size=4)
+map <- qmap('Los Angeles', zoom = 7, maptype = 'satellite')
+map + geom_point(data = misr.grid, aes(x = lon, y = lat), shape=22, size=3, col="darkgrey",alpha=0.6)+ 
+      geom_point(data = met.points, aes(x = lon, y = lat),col="magenta", size=4)
 
