@@ -26,6 +26,7 @@ met<-read.csv("/Users/mf/Documents/NCDC/met_2000_2011.csv")
 
 # Take unique dates from MISR file
 misr.days<-misr %>% distinct(date2,.keep_all=TRUE) 
+# Loops to spatially join data
 misr.aqspm25.match.all<-vector('list',length(misr.days$date))
 misr.aqspm10.match.all<-vector('list',length(misr.days$date))
 misr.aqspm2510.match.all<-vector('list',length(misr.days$date))
@@ -176,7 +177,7 @@ for (i in 1:length(misr.days$date)){
   }
   
   # match STN with met
-   if (length(dist.stn.met[1,])>0){
+   if (dim(stn.daily)[1]>0){
      for (j in 1:length(dist.stn.met[1,])){ 
        if (min(dist.stn.met[,j])<=25){
        met.stn.match.list[[j]]<-data.frame(met.daily[which.min(dist.stn.met[,j]),],stn.daily[j,]) 
@@ -189,25 +190,34 @@ for (i in 1:length(misr.days$date)){
   met.aqspm2510.match.all[[i]] <- do.call("rbind", met.pm2510.match.list)
   met.stn.match.all[[i]] <- do.call("rbind", met.stn.match.list)
 }
+#end loop
+
 
 # Append datasets together 
+# MISR AQS/STN
 misr.aqspm25 <- do.call("rbind", misr.aqspm25.match.all)
 #Check
 cor(misr.aqspm25$AOD,misr.aqspm25$PM25,use="complete")
+write.csv(misr.aqspm25,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm25_", min(misr.aqspm25$year),"_",max(misr.aqspm25$year),".csv", sep=""),row.names=FALSE)
 
 misr.aqspm10 <- do.call("rbind", misr.aqspm10.match.all)
 #Check
-#cor(misr.aqspm10$AODlarge,misr.aqspm10$PM10,use="complete")
+cor(misr.aqspm10$AOD,misr.aqspm10$PM10,use="complete")
+write.csv(misr.aqspm10,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm10_", min(misr.aqspm10$year),"_",max(misr.aqspm10$year),".csv", sep=""),row.names=FALSE)
 
 misr.aqspm2510 <- do.call("rbind", misr.aqspm2510.match.all)
 #Check
 #sum(!is.na(misr.aqspm2510$pm10_pm25))
 #hist(misr.aqspm2510$pm10_pm25)
 #ss<-misr.aqspm2510[misr.aqspm2510$pm10_pm25>=0,]
-#cor(ss$AODlarge,ss$pm10_pm25,use="complete")
+cor(misr.aqspm2510$AODlarge,misr.aqspm2510$pm10_pm25,use="complete")
+write.csv(misr.aqspm2510,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm10_pm25_", min(misr.aqspm2510$year),"_",max(misr.aqspm2510$year),".csv", sep=""),row.names=FALSE)
+
 
 misr.stn <- do.call("rbind", misr.stn.match.all)
+write.csv(misr.stn,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_stn_", min(misr.stn$year),"_",max(misr.stn$year),".csv", sep=""),row.names=FALSE)
 
+# AQS and Meteorology matched data 
 aqspm25.met <- do.call("rbind", met.aqspm25.match.all)
 
 aqspm10.met <- do.call("rbind", met.aqspm10.match.all)
@@ -216,13 +226,13 @@ aqspm2510.met <- do.call("rbind", met.aqspm2510.match.all)
 
 aqsstn.met <- do.call("rbind", met.stn.match.all)
 
-# merge with met and write dataset
+# merge MISR AQS with AQS MET and write dataset
 misr.aqspm25.met<-join(misr.aqspm25, aqspm25.met, by=c('AQS_SITE_ID','POC','month','day','year'))
 cor(misr.aqspm25.met$AOD,misr.aqspm25.met$PM25,use="complete")
-
-write.csv(misr.aqspm25.met,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm10_met_", min(misr.aqspm25.met$year),"_",max(misr.aqspm25.met$year),".csv", sep=""),row.names=FALSE)
+write.csv(misr.aqspm25.met,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm25_met_", min(misr.aqspm25.met$year),"_",max(misr.aqspm25.met$year),".csv", sep=""),row.names=FALSE)
 
 misr.aqspm10.met<-join(misr.aqspm10, aqspm10.met, by=c('AQS_SITE_ID','POC','month','day','year'))
+cor(misr.aqspm10.met$AODlarge,misr.aqspm10.met$PM10,use="complete")
 write.csv(misr.aqspm10.met,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm10_met_", min(misr.aqspm10.met$year),"_",max(misr.aqspm10.met$year),".csv", sep=""),row.names=FALSE)
 
 misr.aqspm2510.met<-join(misr.aqspm2510, aqspm2510.met, by=c('AQS_SITE_ID','POC','month','day','year'))
@@ -230,9 +240,8 @@ sum(!is.na(misr.aqspm2510.met$pm10_pm25))
 cor(misr.aqspm2510.met$AODlarge,misr.aqspm2510.met$pm10_pm25,use="complete")
 ss<-misr.aqspm2510.met[misr.aqspm2510.met$pm10_pm25>=0,]
 cor(ss$AODlarge,ss$pm10_pm25,use="complete")
-
 write.csv(misr.aqspm2510.met,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm10_pm25_met_", min(misr.aqspm2510.met$year),"_",max(misr.aqspm2510.met$year),".csv", sep=""),row.names=FALSE)
 
-misr.aqsstn.met<-join(misr.stn, aqsstn.met, by=c('lat','lon','month','day','year'))
+misr.aqsstn.met<-join(misr.stn, aqsstn.met, by=c('Latitude','Longitude','month','day','year'))
 write.csv(misr.aqsstn.met,paste("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_stn_met_", min(misr.aqsstn.met$year),"_",max(misr.aqsstn.met$year),".csv", sep=""),row.names=FALSE)
 

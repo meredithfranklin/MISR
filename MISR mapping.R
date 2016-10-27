@@ -1,68 +1,156 @@
-##############################################
-# MISR 08/09 4km data visualization
-# December 2014, February 2015, June-July 2015
-# Meredith Franklin
-##############################################
-library(RgoogleMaps) 
-library(RColorBrewer) 
+################################################
+# MISR4km data visualization
+# Requires AQS PM2.5, PM10, STN, Met datasets
+################################################
+
 library(ggmap)
-library(colorRamps)
-library(fields)
+
 setwd("/Users/mf/Documents/MISR/Reports")
 
+
+misr<-read.csv("/Users/mf/Documents/MISR/Data/misr_2000_2011.csv")
+misr<-misr[misr$land.water.mask==3,]
+misr.grid<-unique(misr[,1:2])
+misr_06_11<-misr[misr$year>=2006,]
+misr.date<-unique(misr_06_11[,13])
+# Matched sites
+misr.aqspm25<-read.csv("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm25_2000_2011.csv")
+misr.aqspm10<-read.csv("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm10_2000_2011.csv")
+misr.aqspm1025<-read.csv("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_pm10_pm25_2000_2011.csv")
+misr.stn<-read.csv("/Users/mf/Documents/MISR/Data/Match 2000-2011/misr_stn_2002_2011.csv")
+
+# All sites
+aqspm25<-read.csv("/Users/mf/Documents/AQS/PM25/pm25_2000_2011.csv")
+aqspm10<-read.csv("/Users/mf/Documents/AQS/PM10/pm10_2000_2011.csv")
+aqspm10_pm25<-read.csv("/Users/mf/Documents/AQS/PM10/pm10_pm25_2000_2011.csv")
+stn<-read.csv("/Users/mf/Documents/AQS/STN/stn_2001_2011.csv")
+met<-read.csv("/Users/mf/Documents/NCDC/met_2000_2011.csv")
+
+aqspm25_06_11<-aqspm25[aqspm25$year>=2006,]
+aqspm10_06_11<-aqspm10[aqspm10$year>=2006,]
+aqspm10_pm25_06_11<-aqspm10_pm25[aqspm10_pm25$year>=2006,]
+
+met_06_11<-met[met$year>=2006,]
+
+# Subset 2006-2011 correct region
+aqspm25_06_11<-read.csv("/Users/mf/Documents/MISR/Data/PM25_sites_06_11ss.csv")
+aqspm10_06_11<-read.csv("/Users/mf/Documents/MISR/Data/PM10_sites_06_11ss.csv")
+met_06_11<-read.csv("/Users/mf/Documents/MISR/Data/met_sites_06_11ss.csv")
+stn<-read.csv("/Users/mf/Documents/AQS/STN/stn_2001_2011.csv")
+stn_06_11<-stn[stn$year>=2006,]
+
+aqspm25.points<-unique(misr.aqspm25[,38:39])
+aqspm25.points2<-unique(aqspm25_06_11[,2:3])
+#write.csv(aqspm25.points2,'PM25_sites_06_11.csv',row.names=FALSE)
+aqspm10.points<-unique(misr.aqspm10[,38:39])
+aqspm10.points2<-unique(aqspm10_06_11[,2:3])
+#write.csv(aqspm10.points2,'PM10_sites_06_11.csv',row.names=FALSE)
+aqspm10.pm25.points<-unique(misr.aqspm1025[,22:23])
+aqspm10.pm25.points2<-unique(aqspm10_pm25_06_11[,1:2])
+#write.csv(aqspm10.pm25.points2,'PM2510_sites_06_11.csv',row.names=FALSE)
+
+stn.points<-unique(misr.stn[,22:23])
+stn.points2<-unique(stn_06_11[,1:2])
+write.csv(stn.points2,'STN_sites_06_11.csv',row.names=FALSE)
+
+met.points<-unique(met_06_11[,2:3])
+met.points<-met.points[met.points$lon< -116.16,]
+met.points<-met.points[met.points$lat> 33.683,]
+write.csv(met.points,'met_sites_06_11.csv',row.names=FALSE)
+map <- qmap('Los Angeles', zoom = 7, maptype = 'satellite')
+postscript("Pointsmap_new.eps", width = 480, height = 480)
+map + geom_point(data = misr.grid, aes(x = lon, y = lat), shape=22, size=1, col="white",alpha=0.6)+
+  geom_point(data = aqspm10.points2, aes(x = Longitude, y = Latitude),col="magenta", shape=15,size=4)+
+  geom_point(data = aqspm25.points2, aes(x = Longitude, y = Latitude),col="cyan", size=2)+
+  geom_point(data = stn.points2, aes(x = Longitude, y = Latitude),col="yellow", shape=18, size=4)+
+  geom_point(data = met.points, aes(x = lon, y = lat),col="green", shape=43,size=5)
+
+dev.off()
+
+
+  geom_point(data = aqspm10.pm25.points, aes(x = Longitude, y = Latitude),shape=23,col="purple", size=3)+
+  geom_point(data = aqspm10.pm25.points2, aes(x = Longitude, y = Latitude),shape=23,col="green", size=1)
+    
+  geom_point(data = stn.points, aes(x = Longitude, y = Latitude),col="yellow", size=2)+
+  #geom_point(data = stn.points2, aes(x = Longitude, y = Latitude),shape=43, col="green", size=4)
+
+
+
+
+
+
+
+
+## OLD
 # Read processed data
 # Individual files
-aqspm25.08.09.ss2<-read.csv("/Users/mf/Documents/MISR/Data/aqsPM25_08_09_ss_frm.csv")
-aqspm10.08.09.ss2<-read.csv("/Users/mf/Documents/MISR/Data/aqspm10_08_09_ss.csv")
-stn.08.09.ss<-read.csv("/Users/mf/Documents/AQS/STN/stn_08_09_ss.csv")
-met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met_08_09.csv")
 misr.08.09<-read.csv("/Users/mf/Documents/MISR/Data/misr_08_09.csv")
+# Remove MISR AOD over water
+misr.08.09<-misr.08.09[misr.08.09$land.water.mask==3,]
+# AQS
+aqspm25<-read.csv("/Users/mf/Documents/MISR/Data/aqspm25_08_09_CAnew.csv")
+aqspm10<-read.csv("/Users/mf/Documents/MISR/Data/aqspm10_08_09_CAnew.csv")
+aqspm10_pm25<-read.csv("/Users/mf/Documents/MISR/Data/aqspm10_25_2008_2009_CAnew.csv")
+stn.08.09<-read.csv("/Users/mf/Documents/AQS/STN/stn_08_09_ss.csv")
+met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met_08_09.csv")
+
+# Points for mapping
+misr.grid<-unique(misr.08.09[,1:2])
+write.csv(misr.grid,"/Users/mf/Documents/MISR/Data/misr_locations.csv")
+aqspm25<-aqspm25[aqspm25$SITE_LONGITUDE2>=-120 & aqspm25$SITE_LONGITUDE2<= -117,]
+aqspm25<-aqspm25[aqspm25$SITE_LATITUDE2>=33.65 & aqspm25$SITE_LATITUDE2<=35.5,]
+aqspm25<-aqspm25[aqspm25$SITE_LONGITUDE2 != -119.4869,] #Remove Catalina
+aqspm25.points<-unique(aqspm25[,20:21])
+write.csv(aqspm25.points,"/Users/mf/Documents/MISR/Data/PM25_locations.csv")
+aqspm10<-aqspm10[aqspm10$SITE_LONGITUDE2>=-120 & aqspm10$SITE_LONGITUDE2<= -117,]
+aqspm10<-aqspm10[aqspm10$SITE_LATITUDE2>=33.65 & aqspm10$SITE_LATITUDE2<=35.5,]
+aqspm10<-aqspm10[aqspm10$SITE_LONGITUDE2 != -119.4869,] #Remove Catalina
+aqspm10.points<-unique(aqspm10[,23:24])
+write.csv(aqspm10.points,"/Users/mf/Documents/MISR/Data/PM10_locations.csv")
+aqspm10_pm25<-aqspm10_pm25[aqspm10_pm25$SITE_LONGITUDE2.x>=-120 & aqspm10_pm25$SITE_LONGITUDE2.x<= -117,]
+aqspm10_pm25<-aqspm10_pm25[aqspm10_pm25$SITE_LATITUDE2.x>=33.65 & aqspm10_pm25$SITE_LATITUDE2.x<=35.5,]
+aqspm10_pm25<-aqspm10_pm25[aqspm10_pm25$SITE_LONGITUDE2.x != -119.4869,] #Remove Catalina
+aqspm10_25.points<-unique(aqspm10_pm25[,20:21])
+
+
+stn.points<-unique(stn.08.09[,20:21])
+write.csv(stn.points,"/Users/mf/Documents/MISR/Data/stn_locations.csv")
+met.08.09.ss<-met.08.09[met.08.09$lat>33.65,]
+met.points<-unique(met.08.09.ss[,4:5])
+write.csv(met.points,"/Users/mf/Documents/MISR/Data/met_locations.csv")
+
 #misr.08.09.monthly<-read.csv("/Users/mf/Documents/MISR/Data/misr_08_09_monthly.csv")
 # Matched MISR-AQS files
-misr.aqspm25<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25.csv")
-misr.aqspm10<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10.csv")
+misr.aqspm25.old<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25.csv")
+misr.aqspm10.old<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10.csv")
 # Matched MISR-AQS files on STN days
 misr.aqspm25.match.stn<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm25_stn_match.csv")
 misr.aqspm10.match.stn<-read.csv("/Users/mf/Documents/MISR/Data/misr_aqspm10_stn_match.csv")
 
 misr.08.14.09<-read.csv("/Users/mf/Documents/MISR/Data/predicted_pm25_misr_08_14_09.csv")
 # Plot of all locations and MISR grid, subset data
-# Remove MISR AOD over water
-misr.08.09.ss<-misr.08.09[misr.08.09$land.water.mask==3,]
-misr.grid<-unique(misr.08.09.ss[,1:2])
-#write.csv(misr.grid,"/Users/mf/Documents/MISR/Data/misr_grid.csv")
-# Subset AQS data to MISR domain, take unique locations
-aqspm25.points<-unique(aqspm25.08.09.ss2[,9:10])
-aqspm25.points<-aqspm25.points[aqspm25.points$SITE_LATITUDE>33.65,]
-stn.points<-unique(stn.08.09.ss[,c(20:21)])
-aqspm10.points<-unique(aqspm10.08.09.ss2[,9:10])
-aqspm10.points<-aqspm10.points[aqspm10.points$SITE_LATITUDE>33.65,]
-met.08.09.ss<-met.08.09[met.08.09$lat>33.65,]
-met.points<-unique(met.08.09.ss[,4:5])
+
 
 # Matched MISR-AQS points
-aqspm25.matchpoints<-unique(misr.aqspm25[,29:30])
-aqspm10.matchpoints<-unique(misr.aqspm10[,28:29])
+aqspm25.matchpoints<-unique(misr.aqspm25[,40:41])
+aqspm10.matchpoints<-unique(misr.aqspm10[,43:44])
 aqspm25.match.stn.matchpoints<-unique(misr.aqspm25.match.stn[,30:31])
+aqspm2510.matchpoints<-unique(misr.aqspm2510[,40:41])
 aqspm10.matchpoint1<-unique(misr.aqspm10[misr.aqspm10$AQS_SITE_ID=="06-065-0004",28:29])
 aqspm25.matchpoint1<-unique(misr.aqspm25[misr.aqspm25$AQS_SITE_ID=="06-037-4002",29:30])
 
-# Plot locations map
-pdf('/Users/mf/Dropbox/Grant Proposals/R01 Environmental Stats/Resubmission/Proposal/Research Strategy/Figures/SpatialPointsMap.pdf')
-  map <- GetMap(center=c(34.1,  -118.1), maptype='hybrid', zoom=10) # use zoom=7 for full extent
-  PlotOnStaticMap(map,misr.grid$lat, misr.grid$lon, cex=5,pch=0,lty=2,lwd=3,col="black")
-  PlotOnStaticMap(map,aqspm25.points$SITE_LATITUDE,aqspm25.points$SITE_LONGITUDE, cex=2,pch=19,col="cyan",add=TRUE)
-  PlotOnStaticMap(map,aqspm10.points$SITE_LATITUDE,aqspm10.points$SITE_LONGITUDE, cex=1.9,pch=17,col="deeppink",add=TRUE)
-  PlotOnStaticMap(map,met.points$lat, met.points$lon, cex=2,pch="+",col="green",add=TRUE)
- #PlotOnStaticMap(map,stn.points$Latitude, stn.points$Longitude, cex=.8,pch=19,col="yellow",add=TRUE)
-  #PlotOnStaticMap(map,aqspm25.matchpoints$SITE_LATITUDE,aqspm25.matchpoints$SITE_LONGITUDE, cex=0.5,pch=19,col="green",add=TRUE)
-  #PlotOnStaticMap(map,aqspm10.matchpoints$SITE_LATITUDE,aqspm10.matchpoints$SITE_LONGITUDE, cex=1,pch='+',col="green",add=TRUE)
-  legend("topright",legend=c("Satellite","AQS PM2.5","AQS PM10","Meteorology"),pch=c(0,19,17,3),col=c("black","cyan","deeppink","green"),
-       box.col='white',bty='o',bg='white',cex=1,title="Spatial Locations")
-dev.off()
 
-map <- qmap('Los Angeles', zoom = 10 , maptype = 'hybrid')
-map + geom_point(data = misr.grid, aes(x = lon, y = lat, color='grey'), shape=s, size=2, alpha=0.5)
+met.points<-unique(met[,4:5])
+aqspm25.points<-unique(aqspm25.all[,17:18])
+aqspm10.points<-unique(aqspm10.all[,17:18])
+stn.points<-unique(stn.all[,1:2])
+map <- qmap('Los Angeles', zoom =7, maptype = 'satellite')
+map + geom_point(data = misr.grid, aes(x = lon, y = lat), shape=22, size=3, col="darkgrey",alpha=0.6)+ 
+  geom_point(data = aqspm25.points, aes(x = Longitude, y = Latitude), shape=17,col="magenta", size=3)+ 
+  geom_point(data = aqspm10.points, aes(x = Longitude, y = Latitude),col="cyan", size=2)+
+  geom_point(data = stn.points, aes(x = Longitude, y = Latitude),shape =18,col="yellow", size=2)+ 
+  geom_point(data = met.points, aes(x = lon, y = lat), shape=43,col="green", size=5)
+
 
 
 # Plot st model predictions PM2.5
