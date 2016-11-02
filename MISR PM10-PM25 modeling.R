@@ -26,11 +26,12 @@ misr.aqspm2510.met$dow<-(weekdays(as.Date(misr.aqspm2510.met$date2,"%Y-%m-%d")))
 
 misr.aqspm2510$AODsm_med<-misr.aqspm2510$AODsmall+misr.aqspm2510$AODmed
 misr.aqspm2510.met$AODsm_med<-misr.aqspm2510.met$AODsmall+misr.aqspm2510.met$AODmed
+misr.aqspm2510.met$AODlarge_med<-misr.aqspm2510.met$AODlarge+misr.aqspm2510.met$AODmed
 
 misr.aqspm2510.ss<-misr.aqspm2510[misr.aqspm2510$AOD<1,]
 misr.aqspm2510.met.ss<-misr.aqspm2510.met[misr.aqspm2510.met$AOD<1,]
 
-# Summary Statistics pm10_pm25
+# Summary Statistics pm10_pm25 2006-2011
 misr.aqspm2510.met.06.11<-misr.aqspm2510.met.ss[misr.aqspm2510.met.ss$year>=2006,]
 misr.aqspm2510.met.06.11<-misr.aqspm2510.met.06.11[misr.aqspm2510.met.06.11$pm10_pm25>=0,]
 hist(misr.aqspm2510.met.06.11$pm10_pm25)
@@ -77,6 +78,8 @@ cat("LM AODsmall_med pm10_pm25 met\n", file = "SummaryStatspm10_pm25_2006_2011.t
 capture.output(summary(lm(pm10_pm25~AODsm_med, data=misr.aqspm2510.met.06.11)), file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
 cat("LM AODlarge pm10_pm25 met\n", file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
 capture.output(summary(lm(pm10_pm25~AODlarge, data=misr.aqspm2510.met.06.11)), file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
+cat("LM AODlarge+med pm10_pm25 met\n", file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
+capture.output(summary(lm(pm10_pm25~AODlarge_med, data=misr.aqspm2510.met.06.11)), file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
 
 # GAM models pm10_pm25
 cat("LM AOD pm10_pm25 \n", file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
@@ -104,6 +107,7 @@ cat("LM AODsmall_med pm10_pm25 met\n", file = "SummaryStatspm10_pm25_2006_2011.t
 capture.output(summary(gam(pm10_pm25~s(AODsm_med)+te(x.1,y.1,julian2,k=c(25,8),d=c(2,1),bs=c('tp','cr'))+te(julian2,year)+s(month, bs="cc",k=7)+as.factor(dow)+rh+wind.sp, data=misr.aqspm2510.met.06.11)), file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
 cat("LM AODlarge pm10_pm25 met\n", file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
 capture.output(summary(gam(pm10_pm25~s(AODlarge)+te(x.1,y.1,julian2,k=c(25,8),d=c(2,1),bs=c('tp','cr'))+te(julian2,year)+s(month, bs="cc",k=7)+as.factor(dow)+rh+wind.sp, data=misr.aqspm2510.met.06.11)), file = "SummaryStatspm10_pm25_2006_2011.txt", append = TRUE)
+
 # END MODELS pm10_pm25
 
 # Cross Validation
