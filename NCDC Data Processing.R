@@ -19,6 +19,8 @@ st.so.ca<-st.so.ca[complete.cases(st.so.ca),]
 # write.csv(st.so.ca,"/Users/mf/Documents/NCDC/SoCalNCDCsites.csv",row.names = FALSE)
 # st.so.ca<-read.csv("/Users/mf/Documents/NCDC/SoCalNCDCsites.csv")
 met.list.all<-vector('list')
+
+# loop through years downloading zip files, unzipping, subsetting
 for (y in 2000:2011){
   y.la.list<-st.so.ca[st.so.ca$BEGIN<=y & st.so.ca$END>=y,]
 
@@ -93,8 +95,9 @@ met$y<-newcoords.met[,2]
 # read/write
 write.csv(met,paste("/Users/mf/Documents/NCDC/met_",min(met$year),"_",max(met$year),".csv", sep=""),row.names=FALSE)
 #met.08.09<-read.csv("/Users/mf/Documents/MISR/Data/met_08_09.csv")
-# Check
+met<-read.csv("/Users/mf/Documents/NCDC/met_2000_2011.csv")
 
+# visual Check
 met.points<-unique(met[,4:5])
 map <- qmap('Los Angeles', zoom = 7, maptype = 'satellite')
 map + geom_point(data = misr.grid, aes(x = lon, y = lat), shape=22, size=3, col="darkgrey",alpha=0.6)+ 

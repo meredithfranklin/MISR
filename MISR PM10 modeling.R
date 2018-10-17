@@ -239,20 +239,23 @@ summary(lm(gam.pred.pm10$PM10~gam.pred.pm10$gam.st.pred.pm10))
 #  Plots
 
 # PM10 - AOD large scatterplot
-pdf('MISR.AOD.PM10_new.pdf')
+pdf('MISR.AOD.PM10_R3b.pdf')
 p<-qplot(AODlarge,PM10, data=misr.aqspm10.met.06.11,xlab="MISR AOD Large",ylab=expression("AQS PM"[10]*", ug/m"^3))
-p+stat_smooth(method="gam",formula=y~s(x,k=3)) +stat_smooth(method='lm',formula=y~x,col='red')
+p+stat_smooth(method="gam",formula=y~s(x,k=3),col="black",linetype="dashed") +stat_smooth(method='lm',formula=y~x,col='black')+
+  theme(axis.text=element_text(size=14), axis.title=element_text(size=14))+
+  scale_x_continuous(breaks = round(seq(min(misr.aqspm10.met.06.11$AODlarge), max(misr.aqspm10.met.06.11$AODlarge), by = 0.1),1)) 
 dev.off()
 
 # cross validation plot
 # PM10
+gam.pred4.pm10<-read.csv("/Users/mf/Documents/MISR/Papers and Reports/Results/gam.pm10.pred.mod4.csv")
 gam.pred4.pm10b<-gam.pred4.pm10[gam.pred4.pm10$gam.st4.pred.pm10>0,]
 gam.pred4.pm10b<-gam.pred4.pm10b[gam.pred4.pm10$gam.st4.pred.pm10<200,]
 gam.pred4.pm10b<-gam.pred4.pm10b[gam.pred4.pm10$PM10<200,]
-pdf("CV_PM10_06_11.pdf")
+pdf("CV_PM10_06_11_R3b.pdf")
 p11<-qplot(gam.st4.pred.pm10,PM10,data=gam.pred4.pm10,xlab=expression('Predicted PM'[10]*', ug/m'^3),ylab=expression('Observed PM'[10]*', ug/m'^3))
-plot11<-p11+stat_smooth(method='lm',formula=y~x-1,col='red')+stat_smooth(method='lm',formula=y~x,col='blue')
-plot11
+plot11<-p11+geom_abline(intercept = 0, slope = 1, color="black",linetype='dashed')+stat_smooth(method='lm',formula=y~x,col='black')
+plot11+theme(axis.text=element_text(size=14), axis.title=element_text(size=14))
 dev.off()
 
 pdf('MISR.PM25.PM10.CV_new.pdf')

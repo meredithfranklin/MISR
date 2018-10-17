@@ -38,7 +38,7 @@ misr.stn.met.06.11<-misr.stn.met.ss[misr.stn.met.ss$year>=2006,]
 misr.stn.points<-unique(misr.stn.met.06.11[,22:23])
 
 # PM2.5 from STN sites
-misr.aqspm25.met.POC5<-misr.aqspm25.met.ss[misr.aqspm25.met.ss$POC==5,]
+misr.aqspm25.met.POC5<-misr.stn.met.ss[misr.stn.met.ss$POC==5,]
 misr.aqspm25.met.06.11.POC5<-misr.aqspm25.met.POC5[misr.aqspm25.met.POC5$year>=2006,]
 misr.stnpm25.points<-unique(misr.aqspm25.met.06.11.POC5[,38:39])
 
@@ -259,26 +259,26 @@ write.csv(gam.OC.rsq,"gam.OC.met.cv.rsq.csv",row.names=FALSE)
 
 ## STN PLOTS ##
 
-p1<-qplot(AOD,PM25, data=misr.aqspm25.met.06.11.POC5,xlab="MISR AOD",ylab=expression('STN PM'[2.5]*', ug/m'^3))
-plot1<-p1 +stat_smooth(method='lm',formula=y~x,col='red')
+p1<-qplot(AOD,PM25, data=misr.stn25.met.06.11,xlab="MISR AOD",ylab=expression('STN PM'[2.5]*', ug/m'^3))
+plot1<-p1 +stat_smooth(method='lm',formula=y~x,col='black')
 plot1
 #plot1<-p1+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
 p2<-qplot(AOD,OC, data=misr.stn.met.06.11,xlab="MISR AOD",ylab=expression('STN OC, ug/m'^3))
-plot2<-p2 +stat_smooth(method='lm',formula=y~x,col='red')
+plot2<-p2 +stat_smooth(method='lm',formula=y~x,col='black')
 plot2
 #plot2<-p2+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
 p3<-qplot(AOD,SO4, data=misr.stn.met.06.11,xlab="MISR AOD",ylab=expression('STN SO'[4]*', ug/m'^3))
-plot3<-p3+stat_smooth(method='lm',formula=y~x,col='red')
+plot3<-p3+stat_smooth(method='lm',formula=y~x,col='black')
 plot3
 #plot3<-p3+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
 p4<-qplot(AOD,NO3, data=misr.stn.met.06.11,xlab="MISR AOD",ylab=expression('STN NO'[3]*', ug/m'^3))
-plot4<-p4+stat_smooth(method='lm',formula=y~x,col='red')
+plot4<-p4+stat_smooth(method='lm',formula=y~x,col='black')
 plot4
 #plot4<-p4+stat_smooth(method="gam",formula=y~s(x,k=4)) +stat_smooth(method='lm',formula=y~x,col='red')
 
-pdf('MISR.STN_new.pdf')
+pdf('/Users/mf/Documents/MISR/Papers and Reports/RSE Revision/Revision 3/Figure3.pdf')
 grid.arrange(plot1,plot2,plot3,plot4,nrow=2,ncol=2)
 dev.off()

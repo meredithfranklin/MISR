@@ -5,7 +5,7 @@
 
 library(ggmap)
 
-setwd("/Users/mf/Documents/MISR/Reports")
+setwd("/Users/mf/Documents/MISR/Papers and Reports")
 
 
 misr<-read.csv("/Users/mf/Documents/MISR/Data/misr_2000_2011.csv")
@@ -59,7 +59,7 @@ met.points<-met.points[met.points$lat> 33.683,]
 #write.csv(met.points,'met_sites_06_11.csv',row.names=FALSE)
 
 
-map <- qmap('Los Angeles', zoom = 7, maptype = 'satellite')
+map <- qmap('Los Angeles', zoom = 8, maptype = 'hybrid')
 postscript("Pointsmap_new.eps", width = 480, height = 480)
 map + geom_point(data = misr.grid, aes(x = lon, y = lat), shape=22, size=1, col="white",alpha=0.6)+
   geom_point(data = aqspm10.points2, aes(x = Longitude, y = Latitude),col="magenta", shape=15,size=4)+
@@ -69,8 +69,22 @@ map + geom_point(data = misr.grid, aes(x = lon, y = lat), shape=22, size=1, col=
 
 dev.off()
 
+aqspm25pts<-aqspm25[aqspm25$month==7&aqspm25$day==22&aqspm25$year==2009,]
+basemap <- get_map(location='Los Angeles', zoom = 8, maptype='hybrid', source='google')
+# Convert basemap to ggplot object so we can add data
+pdf("pointsmap.pdf")
+ggmap(basemap) + geom_point(aes(x=Longitude,y=Latitude,color=PM25), alpha=1,size=6, data=aqspm25pts)+
+  scale_color_gradient(low="blue", high="red")
+dev.off()
 
+map <- get_map(location='Los Angeles', zoom = 9, maptype='roadmap', source='google')
 
+ggmap(map,legend="bottomleft")+
+  geom_point(data = aqspm25.points2, aes(x = Longitude, y = Latitude),col="magenta", size=2)+
+  geom_point(data = met.points, aes(x = lon, y = lat),col="black", shape=43,size=5)+
+  theme_nothing(legend = TRUE) + theme(legend.position = "right")
+  #scale_color_manual(name =  element_blank(), labels = c("PM2.5 sites","Weather Stations"), values = c("cyan","green"))
+dev.off()
 
 ## OLD CODE ##
 # Read processed data

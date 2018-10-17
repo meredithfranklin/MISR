@@ -3,6 +3,7 @@
 
 library(dplyr)
 library(plyr)
+library(fields)
 
 # Read in processed data
 
