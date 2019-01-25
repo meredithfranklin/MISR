@@ -9,7 +9,7 @@ require(ncdf4)
 require(data.table)
 require(XML)
 require(downloader)
-setwd('Volumes/Satellite/MISR/')
+setwd('Volumes/Projects/Satellite/MISR/')
 
 # steps to get list of relevant NC file download links from OPeNDAP -------
 # ## grabNcdfUrl is a function that takes in a MISR OPeNDAP url and
@@ -22,8 +22,8 @@ grabNcdfUrl = function(url){
   nc.list = readHTMLTable(htmlParse(url),
                           stringsAsFactors=F)[[1]][,1]
 
-  # collect files within paths 40:45, also exclude XMLs (strings longer than 44)
-  nc.list = nc.list[substr(nc.list,22,24) %in% sprintf('%03d', 40:45) & 
+  # collect files within paths 008:050, also exclude XMLs (strings longer than 44)
+  nc.list = nc.list[substr(nc.list,22,24) %in% sprintf('%03d', 008:050) & 
                       nchar(nc.list) == 44]
   if(length(nc.list) == 0){
     # if vector is empty, returns it
@@ -37,13 +37,15 @@ grabNcdfUrl = function(url){
 }
 
 
-setwd('Volumes/Satellite/MISR/ouput')
+setwd('Volumes/Projects/Satellite/MISR/ouput')
 # create sequence of dates to generate HTML links (replace '-' with '.')
 dates.range = seq.Date(as.Date('2017-03-02'), as.Date('2018-05-31'), 'days')
 url.dates = gsub('-','.',dates.range)
 # create vector of sequential URL links by date
 OPeNDAP.urls = paste0('https://l0dup05.larc.nasa.gov/opendap/misrl2l3/MISR/MIL2ASAE.003/',
                       url.dates, '/contents.html')
+
+
 
 # loop to download OPeNDAP webpages (for scraping later on)
 system.time({
