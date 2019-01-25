@@ -6,7 +6,6 @@ require(data.table)
 setwd('/Users/mf/Documents/MISR/Data/new')
 
 # FUNCTIONS ---------------------------------------------------------------
-# # last here: 19-nov-18
 # FUNCTION to download MISR pages for specified date range
 dl.misr.urls = function(start, end, url.folder=''){
   # INPUTS
@@ -106,7 +105,7 @@ system.time({
 # ncdf.urls = readRDS('ncdf_urls.rds')
 # make sure you have created a directory named ndcf in your working path (to store ncdf files)
 # indices of url vector
-indices = 1:10
+indices = 1:length(misr.urls)
 for(i in indices){
   cat('Downloading [', sprintf('%04d',i), '/', 
       sprintf('%04d', max(indices)), ']: ',
